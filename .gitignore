@@ -1,0 +1,26 @@
+@"
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# IntelliJ / Eclipse / VS Code
+.idea/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+.vscode/
+
+# Windows / macOS
+Thumbs.db
+.DS_Store
+
+# Logs & caches
+*.log
+.out/
+"@ | Out-File -Encoding utf8 .gitignore
