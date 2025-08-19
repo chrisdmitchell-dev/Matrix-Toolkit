@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import com.chrisdmitchell.matrix.algo.reducedform.ReducedForm;
 import com.chrisdmitchell.matrix.util.LogUtils;
 import com.chrisdmitchell.matrix.util.MatrixUtils;
 
@@ -170,16 +171,16 @@ TODO (Matrix Project — next ML-focused operations)
 /*
 TODO (Matrix caching system — lazy + versioned)
 
-[ ] Add versioning to Matrix
-    [ ] private int modCount = 0;  // increment on any in-place mutation
-    [ ] private void markDirty();  // bump modCount; call from all mutators
+[X] Add versioning to Matrix
+    [X] private int modCount = 0;  // increment on any in-place mutation
+    [X] private void markDirty();  // bump modCount; call from all mutators
 
-[ ] Add a small cache holder
-    [ ] private final DecompositionCache cache = new DecompositionCache();
-    [ ] Only cache heavy results (RREF/REF, LU, QR; later Cholesky/SVD)
+[X] Add a small cache holder
+    [X] private final DecompositionCache cache = new DecompositionCache();
+    [X] Only cache heavy results (RREF/REF, LU, QR; later Cholesky/SVD)
 
-[ ] Implement lazy getters with version checks
-    [ ] rref(): if cached.version == modCount, reuse; else compute+store
+[X] Implement lazy getters with version checks
+    [X] rref(): if cached.version == modCount, reuse; else compute+store
     [ ] lu():   same
     [ ] qr():   same
 
@@ -227,7 +228,6 @@ TODO (Matrix caching system — lazy + versioned)
 public class Matrix {
 
 	private int rows, columns;
-	private int modCount = 0;
 	private String name;
 	private boolean savedToDisk, readonly;
 
@@ -239,6 +239,24 @@ public class Matrix {
 	private double[][] matrix;
 
 	private static final Logger log = LoggerFactory.getLogger(Matrix.class);
+	
+	/**
+	 * Records and declarations for result caching.
+	 */
+	@JsonIgnore
+	private int modCount = 0;
+	private record REFResult(Matrix ref, int rank, int version) {}
+	private record RREFResult(Matrix rref, int rank, int version) {}
+	private record LUResult(Matrix L, Matrix U, int[] pivots, int sign, double determinant, int version) {}
+	private record QRResult(Matrix Q, Matrix R, int version) {}
+	private static final class CachedResults {
+		REFResult ref = null;
+		RREFResult rref = null;
+		LUResult lu = null;
+		QRResult qr = null;
+	}
+	@JsonIgnore
+	private final CachedResults cache = new CachedResults();
 
 	/**
 	 * Default constructor required by Jackson.
@@ -257,7 +275,7 @@ public class Matrix {
 	public Matrix(double[][] source) {
 
 		setMatrix(source);
-		this.name = generateRandomMatrixName();
+		this.name = MatrixUtils.generateRandomMatrixName();
 
 	}
 
@@ -340,45 +358,11 @@ public class Matrix {
 		this.readonly = false;
 
 	}
-	/*
-	 * private void markDirty() {
-	 * 
-	 * modCount++;
-	 * 
-	 * }
-	 * 
-	 * public record RrefResult(Matrix rref, int rank) {}
-	 * 
-	 * public record LuResult(Matrix L, Matrix U, int[] pivots, int sign, double
-	 * determinant) {}
-	 * 
-	 * public record QrResult(Matrix Q, Matrix R) {}
-	 * 
-	 * private static final class DecompositionCache { Versioned<RrefResult> rref;
-	 * Versioned<LuResult> lu; Versioned<QrResult> qr; }
-	 * 
-	 * private static final class Versioned<T> { final int version; final T value;
-	 * Versioned(int version, T value) { this.version = version; this.value = value;
-	 * } }
-	 */
-
-	/**
-	 * Generates a random name for a matrix with length {@code RANDOM_MATRIX_NAME_LENGTH} consisting
-	 * of random capital letters.
-	 *
-	 * @return		the generated name
-	 */
-	public String generateRandomMatrixName() {
-
-		Random random = new Random();
-		StringBuilder generatedName = new StringBuilder(RANDOM_MATRIX_NAME_LENGTH);
-
-		for (int i = 0; i < RANDOM_MATRIX_NAME_LENGTH; i++) {
-			generatedName.append((char) ('A' + random.nextInt(26)));
-		}
-
-		return generatedName.toString();
-
+	
+	private void markDirty() {
+		 
+		modCount++;
+	 
 	}
 
 	/**
@@ -409,6 +393,7 @@ public class Matrix {
 		}
 
 		this.matrix[row][column] = value;
+		markDirty();
 		log.trace("Set matrix[{}][{}] to {}.", row, column, value);
 
 	}
@@ -575,6 +560,7 @@ public class Matrix {
 	    this.rows = source.length;
 	    this.columns = columns;
 	    this.matrix = copy;
+	    markDirty();
 
 	}
 
@@ -674,9 +660,9 @@ public class Matrix {
 	public boolean isInvertible() {
 
 		final double det = determinant();
-		final double maxValue = getMaxValue();
+		final double scale = MatrixUtils.safeScale(this.getMatrix());
 
-		if (!nearlyZero(det, maxValue)) {
+		if (!MatrixUtils.nearlyZero(det, scale)) {
 			return true;
 		} else {
 			return false;
@@ -1250,218 +1236,92 @@ public class Matrix {
 	}
 
 	/**
-	 * Mutates the array parameter such that two rows of values are swapped
-	 *
-	 * @param source		the array to be changed
-	 * @param rowFrom		the source row
-	 * @param rowTo			the destination row
-	 */
-	private static void swapRows(double[][] source, int rowFrom, int rowTo) {
-
-		double[] temp;
-
-		temp = source[rowTo];
-		source[rowTo] = source[rowFrom];
-		source[rowFrom] = temp;
-
-	}
-
-	/**
-	 * Determines whether {@code value} is close enough to zero to effectively be zero.
-	 * <p>
-	 * A scale parameter is specified to determine if the value is close enough to zero
-	 * for a particular operation.
-	 * </p>
-	 *
-	 * @param value			the value to test
-	 * @param scale			a scale factor
-	 * @return				{@code true} if the value is nearly zero, {@code false} otherwise
-	 */
-	private static boolean nearlyZero(double value, double scale) {
-
-	    return Math.abs(value) <= ABSOLUTE_EPSILON + (RELATIVE_EPSILON * scale);
-
-	}
-
-	/**
-	 * Finds the largest element in the receiver Matrix.
-	 *
-	 * @return		the largest element
-	 */
-	private double getMaxValue() {
-
-		LogUtils.logMethodEntry(log);
-
-		final int rows = this.getRows();
-		final int columns = this.getColumns();
-		double maxValue = 0.0;
-
-	    for (int i = 0; i < rows; i++) {
-	    	for (int j = 0; j < columns; j++) {
-	    		maxValue = Math.max(maxValue, Math.abs(this.getValue(i, j)));
-	    	}
-	    }
-
-	    log.debug("Found the maximum value of {} from matrix {}.", maxValue, this);
-	    return maxValue;
-
-	}
-
-	/**
 	 * Calculates the row echelon form (REF) of the receiver Matrix and returns
 	 * the REF as a new Matrix object.
 	 *
-	 * @return		the REF of the matrix
-	 * @implNote	Algorithm and refinements provided by ChatGPT (OpenAI)
+	 * @return		the REFResult containing the matrix
+	 */
+	public REFResult ref() {
+		
+		LogUtils.logMethodEntry(log);
+		
+	    if (cache.ref != null && cache.ref.version == modCount) {
+	    	log.debug("Returned cached value of REF matrix {}.", cache.ref.ref());
+	        return cache.ref;
+	    }
+		
+	    double[][] matrixValues = this.getMatrix();
+	    double[][] ref = ReducedForm.calculateREF(matrixValues);
+		int rank = calculateRank(ref);
+		
+		Matrix refMatrix = new Matrix(ref, "REF(" + this.getName() + ")");
+		refMatrix.setReadOnly(true);
+		cache.ref = new REFResult(refMatrix, rank, modCount);
+
+		log.debug("Calculated REF matrix {} from {}.", refMatrix, this);
+		return cache.ref;
+		
+	}
+	
+	/**
+	 * Access to the REF Matrix contained within the cached results.
+	 * 
+	 * @return		the cached REF matrix
 	 */
 	public Matrix rowEchelonForm() {
-
-		LogUtils.logMethodEntry(log);
-
-		final int rows = this.getRows();
-		final int columns = this.getColumns();
-		int nextRow = 0;
-		double[][] newValues = toArrayCopy();
-
-		// Get a good scale value from the matrix
-		double maxValue = getMaxValue();
-	    if (maxValue == 0.0) {
-	    	return new Matrix(newValues, "REF(" + getName() + ")");
-	    }
-
-	    // Walk left to right over the columns placing pivots top-down
-		for (int j = 0; j < columns; j++) {
-			if (nextRow >= rows) {
-				break;
-			}
-			// Choose a pivot row such that the pivot contains the largest value in the column
-			int pivotRow = -1;
-			double bestAbs = 0.0;
-			for (int i = nextRow; i < rows; i++) {
-				double valueAbs = Math.abs(newValues[i][j]);
-				if (valueAbs > bestAbs) {
-					bestAbs = valueAbs;
-					pivotRow = i;
-				}
-			}
-			// If there is no useable pivot in this column
-			if (pivotRow == -1 || nearlyZero(bestAbs, maxValue)) {
-				continue;
-			}
-			// Perform partial pivoting by swapping the pivot row up - this avoids round-off
-			// errors with the floating-point arithmetic
-			if (pivotRow != nextRow) {
-				swapRows(newValues, pivotRow, nextRow);
-			}
-			// Eliminate the values below the pivot
-			double pivot = newValues[nextRow][j];
-			for (int i = nextRow + 1; i < rows; i++) {
-				// Skip processing the row if the element is very close to 0.0
-	            if (nearlyZero(newValues[i][j], bestAbs)) {
-	            	continue;
-	            }
-	            double factor = newValues[i][j] / pivot;
-	            for (int k = j; k < columns; k++) {
-	                double updated = newValues[i][k] - (factor * newValues[nextRow][k]);
-	                // Clamp to 0.0 if the value of updated is very close to 0.0
-	                if (nearlyZero(updated, maxValue)) {
-	                	updated = 0.0;
-	                }
-		            newValues[i][k] = updated;
-	            }
-	        }
-			nextRow++;
-		}
-
-		Matrix ref = new Matrix(newValues, "REF(" + this.getName() + ")");
-		log.debug("Calculated REF matrix {} from matrix {}.", ref, this);
-		return ref;
-
+		
+		return ref().ref();
+		
 	}
 
 	/**
 	 * Calculates the reduced row echelon form (RREF) of the receiver Matrix and returns
 	 * the RREF as a new Matrix object.
 	 *
-	 * @return		the RREF of the matrix
-	 * @implNote	Algorithm and refinements provided by ChatGPT (OpenAI)
+	 * @return		the RREFResult containing the matrix
 	 */
-	public Matrix reducedRowEchelonForm() {
+	public RREFResult rref() {
 
 		LogUtils.logMethodEntry(log);
 
-		// Start with a Matrix in row echelon form
-		Matrix ref = this.rowEchelonForm();
-		final int rows = ref.getRows();
-		final int columns = ref.getColumns();
-		double[][] newValues = ref.getMatrix();
-
-		// Get a good scale value from the row echelon form of the matrix
-		double maxValue = ref.getMaxValue();
-	    if (maxValue == 0.0) {
-	    	return new Matrix(newValues, "RREF(" + getName() + ")");
+	    if (cache.rref != null && cache.rref.version == modCount) {
+	    	log.debug("Returned cached value of RREF matrix {}.", cache.rref.rref());
+	        return cache.rref;
 	    }
+		
+	    double[][] matrixValues = this.getMatrix();
+	    double[][] rref = ReducedForm.calculateRREF(matrixValues);
+	    int rank = calculateRank(rref);
+	    
+		Matrix rrefMatrix = new Matrix(rref, "RREF(" + this.getName() + ")");
+		rrefMatrix.setReadOnly(true);
+		cache.rref = new RREFResult(rrefMatrix, rank, modCount);
 
-	    // Build a list of pivots (first non-zero element in each row)
-		record Pivot(int row, int column) {};
-		List<Pivot> pivots = new ArrayList<>();
-	    for (int i = 0; i < rows; i++) {
-	    	int tempColumn = -1;
-	    	for (int j = 0; j < columns; j++) {
-	    		if (!nearlyZero(newValues[i][j], maxValue)) {
-	    			tempColumn = j;
-	    			break;
-	    		}
-	    	}
-	    	if (tempColumn != -1) {
-	    		pivots.add(new Pivot(i, tempColumn));
-	    	}
-	    }
-
-	    // Normalize pivot rows, eliminating from bottom to top
-	    for (int p = pivots.size() - 1; p >= 0; p--) {
-	    	int row = pivots.get(p).row();
-	    	int column = pivots.get(p).column();
-	    	// Normalize pivot row so pivot = 1
-	    	double pivot = newValues[row][column];
-	    	if (!nearlyZero(pivot, maxValue) && Math.abs(pivot - 1.0) > ABSOLUTE_EPSILON) {
-	    		for (int j = column; j < columns; j++) {
-	    			double factor = newValues[row][j] / pivot;
-	    			// Clamp value to 0.0 in case of very small round-off errors
-	    			newValues[row][j] = nearlyZero(factor, maxValue) ? 0.0 : factor;
-	    		}
-	    	}
-	    	// Clamp value to 1.0 in case of very small round-off errors
-	    	newValues[row][column] = 1.0;
-	    	// Eliminate above so that the elements above the pivot are 0
-	    	for (int i = 0; i < row; i++) {
-	    		double factor = newValues[i][column];
-	    		if (nearlyZero(factor, maxValue)) {
-	    			continue;
-	    		}
-	    		for (int j = column; j < columns; j++) {
-	    			double updated = newValues[i][j] - factor * newValues[row][j];
-	    			newValues[i][j] = nearlyZero(updated, maxValue) ? 0.0 : updated;
-	    		}
-	    	}
-	    }
-
-		Matrix rref = new Matrix(newValues, "RREF(" + this.getName() + ")");
-		log.debug("Calculated RREF matrix {} from matrix {}.", rref, this);
-		return rref;
+		log.debug("Calculated RREF matrix {} from {}.", rrefMatrix, this);
+		return cache.rref;
 
 	}
-
-	public int rank() {
-
-		Matrix rref = reducedRowEchelonForm();
-		double scale = rref.getMaxValue();
+	
+	/**
+	 * Access to the RREF Matrix contained within the cached results.
+	 * 
+	 * @return		the cached RREF matrix
+	 */
+	public Matrix reducedRowEchelonForm() {
+		
+		return rref().rref();
+		
+	}
+	
+	private int calculateRank(double[][] source) {
 
 		int rank = 0;
-		for (double[] row : rref.getMatrix()) {
+		double scale = MatrixUtils.safeScale(source);
+		
+		for (double[] row : source) {
 			boolean nonZero = false;
-			for (double val : row) {
-				if (!nearlyZero(val, scale)) {
+			for (double value : row) {
+				if (!MatrixUtils.nearlyZero(value, scale)) {
 					nonZero = true;
 					break;
 				}
@@ -1470,17 +1330,27 @@ public class Matrix {
 				rank++;
 			}
 		}
-
+		
 		return rank;
-
+		
 	}
-
+	
+	public int rank() {
+		
+		int rank;
+		if (cache.ref != null && cache.ref.version == modCount) {
+			rank = cache.ref.rank;
+		} else if (cache.rref != null && cache.rref.version == modCount) {
+			rank = cache.rref.rank;
+		} else {
+			rank = ref().rank;
+		}
+		return rank;
+	}
+	
 	public int nullity() {
 
-		int columns = this.getColumns();
-		int rank = rank();
-
-		return columns - rank;
+		return this.columns - rank();
 
 	}
 

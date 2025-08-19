@@ -81,6 +81,44 @@ import com.chrisdmitchell.matrix.util.LogUtils;
  *  *\/
  */
 
+/*
+TODO (Daily Git Workflow for this project)
+
+1. Update your local main branch
+   git checkout main
+   git pull origin main
+
+2. Create a new branch for your work
+   git checkout -b feature/<short-description>
+   // Example: git checkout -b feature/matrix-multiply
+
+3. Do your coding
+   // Edit files, add methods, run tests
+
+4. Stage and commit changes
+   git status               // see changes
+   git add .                // stage all changed files
+   git commit -m "Implement <feature>"
+
+5. Push your branch to GitHub
+   git push -u origin feature/<short-description>
+
+6. Open a Pull Request on GitHub
+   // Compare & pull request → write description → merge into main
+
+7. Clean up after merge
+   git checkout main
+   git pull origin main
+   git branch -d feature/<short-description>
+   git push origin --delete feature/<short-description>
+
+Notes:
+- Keep commits small and messages meaningful.
+- Never code directly on main — always use a branch.
+- Use git status often to see what’s going on.
+- Run git pull before starting new work to stay in sync.
+*/
+
 /**
  * The entry point of the Matrix Algebra application.
  * <p>

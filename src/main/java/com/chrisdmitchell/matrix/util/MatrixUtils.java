@@ -6,6 +6,12 @@ import org.slf4j.LoggerFactory;
 import com.chrisdmitchell.matrix.model.Matrix;
 
 import static com.chrisdmitchell.matrix.util.Constants.Formatting.*;
+import static com.chrisdmitchell.matrix.util.Constants.Numeric.ABSOLUTE_EPSILON;
+import static com.chrisdmitchell.matrix.util.Constants.Numeric.RANDOM_MATRIX_NAME_LENGTH;
+import static com.chrisdmitchell.matrix.util.Constants.Numeric.RELATIVE_EPSILON;
+
+import java.util.Arrays;
+import java.util.Random;
 
 /**
  * A class of utility methods for working with the {@link Matrix} class.
@@ -18,6 +24,106 @@ public final class MatrixUtils {
 	
 	private MatrixUtils() {}
 
+	// ----------------------
+	// TOLERANCES AND SCALING
+	// ----------------------
+	
+	/**
+	 * Determines whether {@code value} is close enough to zero to effectively be
+	 * zero.
+	 * <p>
+	 * A scale parameter is specified to determine if the value is close enough to
+	 * zero for a particular operation.
+	 * </p>
+	 *
+	 * @param value the value to test
+	 * @param scale a scale factor
+	 * @return {@code true} if the value is nearly zero, {@code false} otherwise
+	 */
+	public static boolean nearlyZero(double value, double scale) {
+
+		return Math.abs(value) <= ABSOLUTE_EPSILON + (RELATIVE_EPSILON * scale);
+
+	}
+	
+	public static double safeScale(double[][] source) {
+		
+		double maxValue = getMaxValue(source);
+		return maxValue == 0.0 ? 1.0 : maxValue;
+
+	}
+
+	/**
+	 * Finds the largest absolute element in a {@code double[][]} array.
+	 *
+	 * @return the largest absolute element
+	 */
+	public static double getMaxValue(double[][] source) {
+
+		return Arrays.stream(source)
+					 .flatMapToDouble(Arrays::stream)
+					 .map(Math::abs)
+					 .max()
+					 .orElse(1.0);
+
+	}
+	
+	// -----------------
+	// COPIES AND SLICES
+	// -----------------
+	
+	public static double[][] copy2D(double[][] source) {
+		
+		LogUtils.logMethodEntry(log);
+		
+		double[][] copy = new double[source.length][];
+		
+		for (int i = 0; i < source.length; i++) {
+			copy[i] = source[i].clone();
+		}
+		
+		log.debug("Copied {}.", source.toString());
+		return copy;
+		
+	}
+	
+	// --------------
+	// ROW OPERATIONS
+	// --------------
+	
+	public static void swapRows(double[][] source, int rowFrom, int rowTo) {
+
+		double[] temp;
+
+		temp = source[rowTo];
+		source[rowTo] = source[rowFrom];
+		source[rowFrom] = temp;
+
+	}
+	
+	// -----------------
+	// STRING FORMATTING
+	// -----------------
+
+	/**
+	 * Generates a random name for a matrix with length {@code RANDOM_MATRIX_NAME_LENGTH} consisting
+	 * of random capital letters.
+	 *
+	 * @return		the generated name
+	 */
+	public static String generateRandomMatrixName() {
+
+		Random random = new Random();
+		StringBuilder generatedName = new StringBuilder(RANDOM_MATRIX_NAME_LENGTH);
+
+		for (int i = 0; i < RANDOM_MATRIX_NAME_LENGTH; i++) {
+			generatedName.append((char) ('A' + random.nextInt(26)));
+		}
+
+		return generatedName.toString();
+
+	}
+	
 	/**
 	 * Builds a compact, single line string representation of the matrix.
 	 * <p>
