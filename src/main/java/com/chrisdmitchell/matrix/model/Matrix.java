@@ -94,6 +94,112 @@ import com.chrisdmitchell.matrix.util.MatrixUtils;
 * [ ] inverse() small cases: 1×1, 2×2, and a singular matrix that should throw.
 */
 
+/*
+TODO (Matrix Project — next ML-focused operations)
+
+[ ] RANK & NULLITY
+    [ ] rank(): compute from RREF (count non-zero rows)
+    [ ] nullity(): nCols - rank()
+    [ ] Tests: rank(null) + nullity == nCols; known dependent examples
+
+[ ] TRACE & NORMS
+    [ ] trace(): sum diagonal (square-only check)
+    [ ] Vector norms: L1, L2, Linf
+    [ ] Matrix norm: Frobenius (sqrt(sum of squares))
+    [ ] Tests: hand-checked small matrices/vectors
+
+[ ] ELEMENTWISE & MAP
+    [ ] hadamard(Matrix B): elementwise multiply (size check)
+    [ ] map(DoubleUnaryOperator f): apply f to each entry
+    [ ] Tests: compare against manual loops
+
+[ ] TRIANGULAR SOLVES
+    [ ] forwardSub(L, b): L lower-triangular with nonzero diag
+    [ ] backSub(U, b): U upper-triangular with nonzero diag
+    [ ] Tests: solve small systems; check A·x ≈ b
+
+[ ] LU DECOMPOSITION (with partial pivoting)
+    [ ] lu(): return {L, U, pivots, sign}; cache result
+    [ ] solve(b): use LU + (forwardSub/backSub)
+    [ ] det(): reuse LU (det = sign * prod(diag(U)))
+    [ ] Tests: P·A ≈ L·U; solve random systems vs inverse(b) baseline
+
+[ ] QR DECOMPOSITION (Householder)
+    [ ] qr(): return {Q, R} with Q orthonormal
+    [ ] solveLeastSquares(b): tall A; minimize ||Ax - b||2
+    [ ] Tests: QᵀQ ≈ I, A ≈ Q·R; LS residual minimal vs normal equations
+
+[ ] CHOLESKY (SPD)
+    [ ] chol(): A = L·Lᵀ for symmetric positive-definite A
+    [ ] solveSPD(b): use Cholesky solves
+    [ ] Tests: reconstruct A; compare solves vs LU
+
+[ ] STATS / PREPROCESSING
+    [ ] columnMeans(), columnStds()
+    [ ] centered(): subtract column means
+    [ ] standardized(): z-score by column
+    [ ] covariance(): (1/(m-1)) * centered(A)ᵀ * centered(A)
+    [ ] correlation(): from covariance + stds
+    [ ] Tests: small dataset with known results
+
+[ ] PROJECTIONS & ORTHONORMAL BASES
+    [ ] orthonormalize(): Modified Gram–Schmidt on columns
+    [ ] projectOntoColSpace(b): use QR
+    [ ] Tests: ‖b - projection‖ ≤ ‖b - any other Ax‖
+
+[ ] POWER ITERATION (top eigenpair)
+    [ ] powerIteration(int maxIters, double tol): returns (λ, v)
+    [ ] Tests: Rayleigh quotient close to λ; ‖A v - λ v‖ small
+
+[ ] PSEUDOINVERSE & RIDGE UTILITIES
+    [ ] pinv(): initial version via QR (full-rank); later via SVD
+    [ ] addLambdaI(double λ): A + λI helper
+    [ ] Tests: A·pinv(A)·A ≈ A; ridge solve sanity checks
+
+[ ] SLICING & STACKING
+    [ ] slice(r0,r1,c0,c1): half-open ranges
+    [ ] hstack(B), vstack(B): dimension checks
+    [ ] Tests: shapes & contents exact
+
+// Notes:
+/// - Cache decompositions and invalidate on mutation.
+/// - Prefer solve() over inverse() for numerical stability.
+/// - Add randomized tests alongside deterministic ones.
+*/
+
+/*
+TODO (Matrix caching system — lazy + versioned)
+
+[ ] Add versioning to Matrix
+    [ ] private int modCount = 0;  // increment on any in-place mutation
+    [ ] private void markDirty();  // bump modCount; call from all mutators
+
+[ ] Add a small cache holder
+    [ ] private final DecompositionCache cache = new DecompositionCache();
+    [ ] Only cache heavy results (RREF/REF, LU, QR; later Cholesky/SVD)
+
+[ ] Implement lazy getters with version checks
+    [ ] rref(): if cached.version == modCount, reuse; else compute+store
+    [ ] lu():   same
+    [ ] qr():   same
+
+[ ] Wire lightweight facts to cached results
+    [ ] rank(): return rref().rank
+    [ ] nullity(): return getColumns() - rank()
+    [ ] det(): return lu().determinant
+
+[ ] Ensure invalidation
+    [ ] All mutating methods call markDirty() (set, swap rows, scale rows, etc.)
+    [ ] Keep ABSOLUTE_EPSILON / RELATIVE_EPSILON consistent for cached results
+
+[ ] (Optional) Thread-safety
+    [ ] Synchronize compute path or use double-checked locking if needed
+
+[ ] (Optional) Tests
+    [ ] rank() called twice without mutation → computes once
+    [ ] mutate one entry → rank() recomputes
+*/
+
 /**
  * Represents a two-dimensional numerical matrix and provides basic matrix algebra operations.
  * <p>
@@ -121,6 +227,7 @@ import com.chrisdmitchell.matrix.util.MatrixUtils;
 public class Matrix {
 
 	private int rows, columns;
+	private int modCount = 0;
 	private String name;
 	private boolean savedToDisk, readonly;
 
@@ -233,6 +340,27 @@ public class Matrix {
 		this.readonly = false;
 
 	}
+	/*
+	 * private void markDirty() {
+	 * 
+	 * modCount++;
+	 * 
+	 * }
+	 * 
+	 * public record RrefResult(Matrix rref, int rank) {}
+	 * 
+	 * public record LuResult(Matrix L, Matrix U, int[] pivots, int sign, double
+	 * determinant) {}
+	 * 
+	 * public record QrResult(Matrix Q, Matrix R) {}
+	 * 
+	 * private static final class DecompositionCache { Versioned<RrefResult> rref;
+	 * Versioned<LuResult> lu; Versioned<QrResult> qr; }
+	 * 
+	 * private static final class Versioned<T> { final int version; final T value;
+	 * Versioned(int version, T value) { this.version = version; this.value = value;
+	 * } }
+	 */
 
 	/**
 	 * Generates a random name for a matrix with length {@code RANDOM_MATRIX_NAME_LENGTH} consisting
@@ -1321,6 +1449,38 @@ public class Matrix {
 		Matrix rref = new Matrix(newValues, "RREF(" + this.getName() + ")");
 		log.debug("Calculated RREF matrix {} from matrix {}.", rref, this);
 		return rref;
+
+	}
+
+	public int rank() {
+
+		Matrix rref = reducedRowEchelonForm();
+		double scale = rref.getMaxValue();
+
+		int rank = 0;
+		for (double[] row : rref.getMatrix()) {
+			boolean nonZero = false;
+			for (double val : row) {
+				if (!nearlyZero(val, scale)) {
+					nonZero = true;
+					break;
+				}
+			}
+			if (nonZero) {
+				rank++;
+			}
+		}
+
+		return rank;
+
+	}
+
+	public int nullity() {
+
+		int columns = this.getColumns();
+		int rank = rank();
+
+		return columns - rank;
 
 	}
 

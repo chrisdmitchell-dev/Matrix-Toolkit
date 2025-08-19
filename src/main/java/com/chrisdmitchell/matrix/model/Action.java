@@ -54,6 +54,12 @@ public enum Action {
 		"If MATRIX_NAME is not given, the program will print a list",
 		"of all of the matrices stored in memory along with their size."
 		}, new int[] { 0, 1 }),
+	REF("ref MATRIX_NAME", new String[] {
+		"Creates the row echelon form of MATRIX_NAME"
+		}, new int[] { 1 }),
+	RREF("rref MATRIX_NAME", new String[] {
+		 "Creates the reduced row echelon form of MATRIX_NAME"
+		 }, new int[] { 1 }),
 	SAVE("save MATRIX_NAME [to FILENAME]", new String[] {
 		"Saves the given matrix MATRIX_NAME to the file FILENAME.",
 		"There is no need to append an extension to the FILENAME.",

@@ -1,5 +1,7 @@
 package com.chrisdmitchell.matrix.io;
 
+import static com.chrisdmitchell.matrix.util.Constants.UI.PROMPT;
+
 import java.util.Arrays;
 import java.util.Scanner;
 
@@ -11,39 +13,37 @@ import com.chrisdmitchell.matrix.model.Command;
 import com.chrisdmitchell.matrix.model.Matrix;
 import com.chrisdmitchell.matrix.util.LogUtils;
 
-import static com.chrisdmitchell.matrix.util.Constants.UI.*;
-
 /**
  * A set of methods to be used to collect user input. Any work that requires getting input
  * from the keyboard will be included here.
- * 
+ *
  * @author Chris Mitchell
  */
 public class ConsoleUI {
 
 	private static final Scanner scanner = new Scanner(System.in);
-	
+
 	private static final Logger log = LoggerFactory.getLogger(ConsoleUI.class);
-	
+
 	/**
 	 * Reads a line from the default scanner object and returns it stripped.
-	 * 
+	 *
 	 * @return		The stripped input string
 	 */
 	private static String readLineStrip() {
-		
+
 		return scanner.nextLine().strip();
-		
+
 	}
-	
+
 	/**
 	 * Reads a natural number from the default scanner object and returns it as an integer type
-	 * 
+	 *
 	 * @param prompt	The string with which to prompt the user for input
 	 * @return			The integer parsed from the user input.
 	 */
     public static int readNaturalNumber(String prompt) {
-    	
+
         while (true) {
             System.out.print(prompt + " ");
             String input = readLineStrip();
@@ -60,7 +60,7 @@ public class ConsoleUI {
             }
         }
     }
-	
+
     /**
      * Gets user input from a command line.
      * <p>
@@ -69,23 +69,23 @@ public class ConsoleUI {
      * processes and validates user commands of various types and equates those
      * strings to an appropriate value in the enum {@code Action}.
      * </p>
-     * 
+     *
      * @return		Returns a new Command object to the caller.
      */
 	public static Command getUserInput() {
-		
-		LogUtils.logMethodEntry(log);	
-		
+
+		LogUtils.logMethodEntry(log);
+
 		System.out.print(PROMPT);
 		String input = readLineStrip();
 		if (input.isEmpty()) {
 			return new Command(null, null);
 		} else {
 			log.debug("User gave the following command at the command prompt: {}", input);
-			return parseCommand(input);			
+			return parseCommand(input);
 		}
 	}
-	
+
 	/**
 	 * Creates and returns a matrix entered by the user from the keyboard.
 	 * <p>
@@ -93,27 +93,27 @@ public class ConsoleUI {
 	 * spaces as separators. The method then calls {@code Matrix.setValue()}
 	 * for each double specified in the input.
 	 * </p>
-	 * 
+	 *
 	 * @param name		the variable name of the matrix
 	 * @return			the Matrix object built from user input
 	 */
 	public static Matrix inputMatrix(String name) {
-		
+
 		LogUtils.logMethodEntry(log);
-		
+
 		Matrix matrix;
 
 		int rows = readNaturalNumber("Enter the number of matrix rows as an integer greater than 0:");
 		int columns = readNaturalNumber("Enter the number of matrix columns as an integer greater than 0:");
 		matrix = new Matrix(rows, columns, name, false);
 		log.info("Creating matrix '{}' with dimensions {}x{}", name, rows, columns);
-		
+
 		System.out.print("Please enter the matrix values one row at a time.\n" +
 						 "Separate values with spaces. Values may be decimals.\n");
 		for (int i = 0; i < rows; i++) {
-			
+
 			while (true) {
-				
+
 				System.out.print("Row " + (i + 1) + ": ");
 				String[] input = readLineStrip().split("\\s+");
 	            if (input.length != columns) {
@@ -122,7 +122,7 @@ public class ConsoleUI {
 	                continue;
 	            }
 	            log.debug("Reading row {}: raw input = {}", i + 1, Arrays.toString(input));
-				
+
 	            double[] rowValues = new double[columns];
 				boolean valid = true;
 	            for (int j = 0; j < columns; j++) {
@@ -142,16 +142,16 @@ public class ConsoleUI {
 	                }
 	                break;
 	            }
-				
+
 			}
-			
+
 		}
-		
+
 		LogUtils.logMatrix(log, "User entered matrix", matrix);
 		return matrix;
-		
+
 	}
-	
+
 	/**
 	 * Parses and validates user input.
 	 * <p>
@@ -160,14 +160,14 @@ public class ConsoleUI {
 	 * calls {@code validate()} to ensure that the given input contains the expected number
 	 * of arguments.
 	 * </p>
-	 *  
+	 *
 	 * @param input			raw input as a string
-	 * @return				a {@code Command} object containing the processed input 
+	 * @return				a {@code Command} object containing the processed input
 	 */
 	private static Command parseCommand(String input) {
-		
-		LogUtils.logMethodEntry(log);	
-		
+
+		LogUtils.logMethodEntry(log);
+
 		String[] args = input.split("\\s+");
 		String[] trimmedArgs = Arrays.copyOfRange(args, 1, args.length);
 		String command = args[0].toLowerCase();
@@ -176,11 +176,13 @@ public class ConsoleUI {
 
 		return switch(command) {
 			case "add" -> validate(Action.ADD, trimmedArgs, Action.ADD.getNumberOfArguments());
-			case "clear" -> validate(Action.CLEAR, trimmedArgs, Action.CLEAR.getNumberOfArguments()); 
+			case "clear" -> validate(Action.CLEAR, trimmedArgs, Action.CLEAR.getNumberOfArguments());
+			case "cofactors" -> validate(Action.COFACTORS, trimmedArgs, Action.COFACTORS.getNumberOfArguments());
 			case "determinant", "det" -> validate(Action.DETERMINANT, trimmedArgs, Action.DETERMINANT.getNumberOfArguments());
 			case "exit", "quit", "q" -> validate(Action.EXIT, trimmedArgs, Action.EXIT.getNumberOfArguments());
 			case "input" -> validate(Action.INPUT, trimmedArgs, Action.INPUT.getNumberOfArguments());
 			case "help", "h", "?" -> validate(Action.HELP, trimmedArgs, Action.HELP.getNumberOfArguments());
+			case "inverse" -> validate(Action.INVERSE, trimmedArgs, Action.INVERSE.getNumberOfArguments());
 			case "list" -> validate(Action.LIST, trimmedArgs, Action.LIST.getNumberOfArguments());
 			case "load" -> {
 				String[] newArgs = normalizeLoadAndSaveInput(trimmedArgs, "from");
@@ -192,6 +194,8 @@ public class ConsoleUI {
 			}
 			case "multiply" -> validate(Action.MULTIPLY, trimmedArgs, Action.MULTIPLY.getNumberOfArguments());
 			case "print" -> validate(Action.PRINT, trimmedArgs, Action.PRINT.getNumberOfArguments());
+			case "ref" -> validate(Action.REF, trimmedArgs, Action.REF.getNumberOfArguments());
+			case "rref" -> validate(Action.RREF, trimmedArgs, Action.RREF.getNumberOfArguments());
 			case "save" -> {
 				String[] newArgs = normalizeLoadAndSaveInput(trimmedArgs, "to");
 				if (newArgs == null) {
@@ -204,7 +208,7 @@ public class ConsoleUI {
 				String[] newArgs = null;
 				if (trimmedArgs[1].equals("to")) {
 					if (trimmedArgs.length == 5) {
-						newArgs = new String[] { trimmedArgs[0], trimmedArgs[2], trimmedArgs[3], trimmedArgs[4] }; 
+						newArgs = new String[] { trimmedArgs[0], trimmedArgs[2], trimmedArgs[3], trimmedArgs[4] };
 					} else if (trimmedArgs.length == 4) {
 						newArgs = new String[] { trimmedArgs[0], trimmedArgs[2], trimmedArgs[3] };
 					}
@@ -214,10 +218,11 @@ public class ConsoleUI {
 				yield validate(Action.SET, newArgs, Action.SET.getNumberOfArguments());
 			}
 			case "subtract" -> validate(Action.SUBTRACT, trimmedArgs, Action.SUBTRACT.getNumberOfArguments());
+			case "transpose" -> validate(Action.TRANSPOSE, trimmedArgs, Action.TRANSPOSE.getNumberOfArguments());
 			default -> new Command(null, null);
 		};
 	}
-	
+
 	/**
 	 * Checks whether the {@code load} or {@code save} commands contains an expected
 	 * keyword.
@@ -237,13 +242,13 @@ public class ConsoleUI {
 	 * This method goes on to check which style of the commands has been given and adjusts
 	 * the string array of command arguments depending on which style command is given.
 	 * </p>
-	 *   
+	 *
 	 * @param args			the command parsed into separate strings
 	 * @param keyword		the given keyword to check for
 	 * @return				the string array adjusted to no longer include the keyword
 	 */
 	private static String[] normalizeLoadAndSaveInput(String[] args, String keyword) {
-		
+
 		if (args.length == 3) {
 			if (!keyword.equalsIgnoreCase(args[1])) {
 				return null;
@@ -258,9 +263,9 @@ public class ConsoleUI {
 	    }
 
 	    return (args.length == 1) ? args : null;
-	    
+
 	}
-	
+
 	/**
 	 * Validates that the number of arguments for a given command given by the user matches
 	 * with what is expected for that particular command.
@@ -268,7 +273,7 @@ public class ConsoleUI {
 	 * If the number of arguments given is not valid for the particular command, a new
 	 * {@code Command} object is returned containing null values.
 	 * </p>
-	 * 
+	 *
 	 * @param action			the command given as an {@code Action} object
 	 * @param args				the command parsed into separate strings
 	 * @param validLengths		the varargs parameter containing additional arguments to the
@@ -276,9 +281,9 @@ public class ConsoleUI {
 	 * @return					a {@code Command} object containing the processed command
 	 */
 	private static Command validate(Action action, String[] args, int... validLengths) {
-		
-		LogUtils.logMethodEntry(log);	
-		
+
+		LogUtils.logMethodEntry(log);
+
 		for (int len : validLengths) {
 			if (args.length == len) {
 				log.info("Successfully validated that {} was called with {} arguments.", action, args.length);

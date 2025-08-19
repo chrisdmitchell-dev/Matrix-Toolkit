@@ -1,5 +1,7 @@
 package com.chrisdmitchell.matrix.app;
 
+import static com.chrisdmitchell.matrix.util.Constants.Files.FILE_EXTENSION;
+
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BinaryOperator;
@@ -15,8 +17,6 @@ import com.chrisdmitchell.matrix.model.Action;
 import com.chrisdmitchell.matrix.model.Command;
 import com.chrisdmitchell.matrix.model.Matrix;
 import com.chrisdmitchell.matrix.util.LogUtils;
-
-import static com.chrisdmitchell.matrix.util.Constants.Files.*;
 
 /*
  * Javadoc Style Guide
@@ -96,24 +96,24 @@ import static com.chrisdmitchell.matrix.util.Constants.Files.*;
  * @author Chris Mitchell
  */
 public class Main {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
-	
+
 	private static final Map<String, Matrix> matrices = new TreeMap<>();
-	
+
 	/**
 	 * Takes two strings and a function and performs that function on the matrices taken
 	 * from the {@code Map<String, String> matrices} collection.
-	 * 
+	 *
 	 * @param matrixNameLeft		a string containing the name of the first matrix
 	 * @param matrixNameRight		a string containing the name of the second matrix
 	 * @param operation				a {@code BiFunction} function operating on the supplied matrices
 	 */
 	private static Matrix performMatrixOperation(String matrixNameLeft, String matrixNameRight, BinaryOperator<Matrix> operation) {
-		
+
 		Matrix matrixLeft = matrices.get(matrixNameLeft);
 		Matrix matrixRight = matrices.get(matrixNameRight);
-		
+
 		if (matrixLeft == null && matrixRight == null) {
 			System.out.printf("The matrices %s and %s do not exist in memory. " +
 							  "Type 'print' to obtain a list of matrices in memory.%n",
@@ -130,35 +130,35 @@ public class Main {
 			  		  		  matrixNameRight);
 			log.warn("The matrix {} does not exist in memory.", matrixNameRight);
 		}
-		
+
 		return operation.apply(matrixLeft, matrixRight);
-		
+
 	}
-	
+
 	private static Matrix performMatrixOperation(String matrixName, UnaryOperator<Matrix> operation) {
-		
+
 		Matrix matrix = matrices.get(matrixName);
-		
+
 		if (matrix == null) {
 			System.out.printf("The matrix %s does not exist in memory. " +
 							  "Type 'print' to obtain a list of matrices in memory.%n",
 							  matrixName);
 			log.warn("The matrix {} does not exist in memory.", matrixName);
 		}
-		
+
 		return operation.apply(matrix);
-		
+
 	}
-	
+
 	/**
 	 * Tests whether {@code string} can be parsed as a finite double or not.
-	 * 
+	 *
 	 * @param string		The string possibly containing a double value
 	 * @return				a Double containing the finite value if successfully parsed,
 	 * 						null if the string cannot be parsed
 	 */
 	private static Double tryParsingDouble(String string) {
-		
+
 		if (string == null) {
 			return null;
 		}
@@ -169,32 +169,32 @@ public class Main {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * Resolves the filename as the last value in an array of strings.
 	 * <p>
 	 * Appends {@code FILE_EXTENSION} if it's not already there.
 	 * </p>
-	 * 
+	 *
 	 * @param args		an array of strings, the last of which is the filename
 	 * @return			the resolved filename with the appropriate extension
 	 */
 	private static String resolveFilename(String[] args) {
-		
+
 		String baseFilename = (args.length == 1 ? args[0] : args[1]);
 		return baseFilename.endsWith(FILE_EXTENSION) ? baseFilename : baseFilename + FILE_EXTENSION;
-	    
+
 	}
 
 	/**
 	 * Main loop for soliciting and processing commands from the user.
-	 * 
+	 *
 	 * @param args		unused
 	 */
 	public static void main(String[] args) {
 
 		System.out.println("Welcome to the Matrix Toolkit!");
-		
+
 		while (true) {
 			Command command = ConsoleUI.getUserInput();
 		    if (command.action() == null) {
@@ -242,15 +242,20 @@ public class Main {
 					switch (textCommand) {
 						case "add" -> Action.ADD.printHelp();
 						case "clear" -> Action.CLEAR.printHelp();
+						case "cofactors" -> Action.COFACTORS.printHelp();
 						case "determinant", "det" -> Action.DETERMINANT.printHelp();
 						case "exit", "quit", "q" -> Action.EXIT.printHelp();
 						case "input" -> Action.INPUT.printHelp();
+						case "inverse" -> Action.INVERSE.printHelp();
 						case "list" -> Action.LIST.printHelp();
 						case "load" -> Action.LOAD.printHelp();
 						case "multiply" -> Action.MULTIPLY.printHelp();
 						case "print" -> Action.PRINT.printHelp();
+						case "ref" -> Action.REF.printHelp();
+						case "rref" -> Action.RREF.printHelp();
 						case "save" -> Action.SAVE.printHelp();
 						case "subtract" -> Action.SUBTRACT.printHelp();
+						case "transpose" -> Action.TRANSPOSE.printHelp();
 						default -> Action.HELP.printAllHelp();
 					}
 				}
@@ -328,6 +333,14 @@ public class Main {
 						}
 					}
 				}
+				case REF -> {
+					Matrix result = performMatrixOperation(command.args()[0], Matrix::rowEchelonForm);
+					ScreenIO.prettyPrintMatrix(result);
+				}
+				case RREF -> {
+					Matrix result = performMatrixOperation(command.args()[0], Matrix::reducedRowEchelonForm);
+					ScreenIO.prettyPrintMatrix(result);
+				}
 				case SAVE -> {
 				    String matrixName = command.args().length > 0 ? command.args()[0] : null;
 					String filename = resolveFilename(command.args());
@@ -341,7 +354,7 @@ public class Main {
 						} else {
 							System.out.printf("There is no matrix %s in memory to save.%n", matrixName);
 							log.warn("User attempted to save matrix {} which does not exist in memory.", matrixName);
-						}							
+						}
 					} else {
 						System.out.println("There are no matrices in memory to save.");
 						log.warn("User attempted to save a matrix when there are none in memory.");
@@ -359,20 +372,26 @@ public class Main {
 							case "add" -> {
 								result = performMatrixOperation(leftMatrix, rightMatrix, Matrix::add);
 							}
+							case "cofactors" -> {
+								result = performMatrixOperation(leftMatrix, Matrix::cofactors);
+							}
+							case "inverse" -> {
+								result = performMatrixOperation(leftMatrix, Matrix::inverse);
+							}
 							case "multiply" -> {
 								result = performMatrixOperation(leftMatrix, rightMatrix, Matrix::multiply);
+							}
+							case "ref" -> {
+								result = performMatrixOperation(leftMatrix, Matrix::rowEchelonForm);
+							}
+							case "rref" -> {
+								result = performMatrixOperation(leftMatrix, Matrix::reducedRowEchelonForm);
 							}
 							case "subtract" -> {
 								result = performMatrixOperation(leftMatrix, rightMatrix, Matrix::subtract);
 							}
-							case "cofactors" -> {
-								result = performMatrixOperation(leftMatrix, Matrix::cofactors);
-							}
 							case "transpose" -> {
 								result = performMatrixOperation(leftMatrix, Matrix::transpose);
-							}
-							case "inverse" -> {
-								result = performMatrixOperation(leftMatrix, Matrix::inverse);
 							}
 							default -> {
 								Action.SET.printHelp();
