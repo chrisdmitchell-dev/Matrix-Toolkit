@@ -7,6 +7,11 @@ import java.util.List;
 
 import com.chrisdmitchell.matrix.util.MatrixUtils;
 
+/**
+ * A class of reduced form methods used for determining the REF and RREF of an 2D-array.
+ * 
+ * @author Chris Mitchell
+ */
 public final class ReducedForm {
 	
 	private ReducedForm() {}
@@ -141,4 +146,31 @@ public final class ReducedForm {
 
 	}
 	
+	/**
+	 * Calculates the rank of the matrix provided in the {@code double[][] source} parameter.
+	 * 
+	 * @param source		the array for which the rank is computed
+	 * @return				the rank of the matrix
+	 */
+	public static int calculateRank(double[][] source) {
+
+		int rank = 0;
+		double scale = MatrixUtils.safeScale(source);
+		
+		for (double[] row : source) {
+			boolean nonZero = false;
+			for (double value : row) {
+				if (!MatrixUtils.nearlyZero(value, scale)) {
+					nonZero = true;
+					break;
+				}
+			}
+			if (nonZero) {
+				rank++;
+			}
+		}
+		
+		return rank;
+		
+	}
 }

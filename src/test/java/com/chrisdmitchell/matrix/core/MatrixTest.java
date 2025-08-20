@@ -631,4 +631,96 @@ public class MatrixTest {
 
 		}
 	}
+	
+	@Nested
+	@DisplayName("Matrix.checkIndex()")
+	class IndexTests {
+		
+		Matrix threeByThreeSequential;
+		
+		@BeforeEach
+		void setUp() {
+			
+			threeByThreeSequential = new Matrix(new double[][] {{1, 2, 3},{4, 5, 6},{7, 8, 9}});
+			
+		}
+
+		@Test
+		@DisplayName("check for exception with indices [0, 0]")
+		void indexr0c0() {
+			
+			try {
+				threeByThreeSequential.getValue(0, 0);
+		    } catch (IndexOutOfBoundsException e) {
+		        fail("IndexOutOfBoundsException thrown");
+		    }
+			
+		}
+		
+		@Test
+		@DisplayName("check for exception with indices [rows - 1, columns - 1]")
+		void indexrminus1cminus1() {
+			
+			try {
+				threeByThreeSequential.getValue(threeByThreeSequential.getRows() - 1, threeByThreeSequential.getColumns() - 1);
+		    } catch (IndexOutOfBoundsException e) {
+		        fail("IndexOutOfBoundsException thrown");
+		    }
+			
+		}
+		
+		@Test
+		@DisplayName("check for exception with indices [-1, 0]")
+		void indexrminus1c0() {
+
+			try {
+				threeByThreeSequential.getValue(-1, 0);
+		        fail("Expected IndexOutOfBoundsException thrown");
+			} catch (IndexOutOfBoundsException e) {
+				// Expected
+		    }
+			
+		}
+		
+		@Test
+		@DisplayName("check for exception with indices [0, -1]")
+		void indexr0cminus1() {
+
+			try {
+				threeByThreeSequential.getValue(0, -1);
+		        fail("Expected IndexOutOfBoundsException thrown");
+			} catch (IndexOutOfBoundsException e) {
+				// Expected
+		    }
+			
+		}
+		
+		@Test
+		@DisplayName("check for exception with indices [rows, 0]")
+		void indexrowsc0() {
+
+			try {
+				threeByThreeSequential.getValue(threeByThreeSequential.getRows(), 0);
+		        fail("Expected IndexOutOfBoundsException thrown");
+			} catch (IndexOutOfBoundsException e) {
+				// Expected
+		    }
+			
+		}
+		
+		@Test
+		@DisplayName("check for exception with indices [0, columns]")
+		void indexr0columns() {
+
+			try {
+				threeByThreeSequential.getValue(0, threeByThreeSequential.getColumns());
+		        fail("Expected IndexOutOfBoundsException thrown");
+			} catch (IndexOutOfBoundsException e) {
+				// Expected
+		    }
+			
+		}
+
+	}
+	
 }

@@ -6,9 +6,7 @@ import org.slf4j.LoggerFactory;
 import com.chrisdmitchell.matrix.model.Matrix;
 
 import static com.chrisdmitchell.matrix.util.Constants.Formatting.*;
-import static com.chrisdmitchell.matrix.util.Constants.Numeric.ABSOLUTE_EPSILON;
-import static com.chrisdmitchell.matrix.util.Constants.Numeric.RANDOM_MATRIX_NAME_LENGTH;
-import static com.chrisdmitchell.matrix.util.Constants.Numeric.RELATIVE_EPSILON;
+import static com.chrisdmitchell.matrix.util.Constants.Numeric.*;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -20,7 +18,15 @@ import java.util.Random;
  */
 public final class MatrixUtils {
 	
+	// ------
+	// FIELDS
+	// ------
+	
 	private static final Logger log = LoggerFactory.getLogger(MatrixUtils.class);
+	
+	// ------------
+	// CONSTRUCTORS
+	// ------------
 	
 	private MatrixUtils() {}
 
@@ -46,6 +52,16 @@ public final class MatrixUtils {
 
 	}
 	
+	/**
+	 * Calculates a scale factor based on the largest absolute value of the elements
+	 * of the array.
+	 * <p>
+	 * If the array is all zeros, return a scale factor of 1.0.
+	 * </p>
+	 * 
+	 * @param source		the source array
+	 * @return				the scale value or 1.0 if the maxValue is 0.0
+	 */
 	public static double safeScale(double[][] source) {
 		
 		double maxValue = getMaxValue(source);
@@ -65,6 +81,32 @@ public final class MatrixUtils {
 					 .map(Math::abs)
 					 .max()
 					 .orElse(1.0);
+
+	}
+	
+	/**
+	 * Bucketing with width {@code 2 * EPSILON} so values with {@code |a − b| < EPSILON} compare equal;
+	 * equality at exactly {@code EPSILON} may differ.
+	 * <p>
+	 * Normalizes {@code -0.0} to {@code +0.0}. {@code NaN}, {@code +∞}, and {@code −∞} map to sentinel
+	 * bucket values.
+	 * </p>
+	 *
+	 * @param value			a double to be quantized
+	 * @return				the bucket index
+	 */
+	public static long bucketIndex(double value) {
+
+		if (Double.isNaN(value)) {
+			return NaN_SENTINEL;
+		} else if (value == Double.POSITIVE_INFINITY) {
+			return POSITIVE_INFINITY_SENTINEL;
+		} else if (value == Double.NEGATIVE_INFINITY) {
+			return NEGATIVE_INFINITY_SENTINEL;
+		} else if (value == 0.0) {
+			value = 0.0;
+		}
+		return Math.round(value / (2 * EPSILON));
 
 	}
 	
@@ -213,7 +255,4 @@ public final class MatrixUtils {
 		log.info("Successfully built a pretty string for matrix {}.", matrix.getName());
 		return outputString.toString();
 	}
-
-
-	
 }
