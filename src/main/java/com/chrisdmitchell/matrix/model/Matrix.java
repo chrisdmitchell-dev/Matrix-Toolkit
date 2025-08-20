@@ -1,17 +1,6 @@
 package com.chrisdmitchell.matrix.model;
 
-import static com.chrisdmitchell.matrix.util.Constants.Numeric.ABSOLUTE_EPSILON;
-import static com.chrisdmitchell.matrix.util.Constants.Numeric.EPSILON;
-import static com.chrisdmitchell.matrix.util.Constants.Numeric.NEGATIVE_INFINITY_SENTINEL;
-import static com.chrisdmitchell.matrix.util.Constants.Numeric.NaN_SENTINEL;
-import static com.chrisdmitchell.matrix.util.Constants.Numeric.POSITIVE_INFINITY_SENTINEL;
-import static com.chrisdmitchell.matrix.util.Constants.Numeric.RANDOM_MATRIX_NAME_LENGTH;
-import static com.chrisdmitchell.matrix.util.Constants.Numeric.RELATIVE_EPSILON;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,186 +8,21 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import com.chrisdmitchell.matrix.algo.reducedform.ReducedForm;
+import com.chrisdmitchell.matrix.util.Determinants;
 import com.chrisdmitchell.matrix.util.LogUtils;
 import com.chrisdmitchell.matrix.util.MatrixUtils;
-
-/* TODO: Matrix.java cleanup & enhancements
-*
-* 🔧 Correctness / API contracts
-* [X] Stop mutating instance fields inside methods. Use locals instead.
-*     - In reducedRowEchelonForm(): replace
-*         rows = ref.getRows(); columns = ref.getColumns();
-*       with
-*         final int rows = ref.getRows(); final int columns = ref.getColumns();
-*     - In transpose(), cofactors(), etc., read into locals instead of assigning to fields.
-*
-* [X] equals(Object) must not throw NPE and must obey the contract.
-*     - Replace current implementation with:
-*         @Override public boolean equals(Object o) {
-*           if (this == o) return true;
-*           if (!(o instanceof Matrix other)) return false; // or classic instanceof + cast
-*           return equalsExact(other);
-*         }
-*
-* [X] Align equalsExact() behavior with its Javadoc.
-*     - Treat -0.0 and +0.0 as equal.
-*     - Make NaN compare equal to NaN (per docs).
-*     - Implement comparison via Double.doubleToLongBits() after normalizing zeros.
-*       (Keeps equals/hashCode consistent.)
-*
-* [X] isInvertible() should be tolerance-aware (floating point).
-*     - Use nearlyZero(det, scale) with a sensible scale (e.g., maxAbs of the matrix).
-*
-* 🧮 Numerical robustness
-* [X] In REF/RREF, compute the scale from the working array you’re mutating.
-*     - Prefer scanning newValues (or a) to get amax instead of calling getMaxValue() on this/ref.
-*
-* [X] REF loop header: fold the row guard into the for-condition.
-*     - for (int j = 0; j < columns && nextRow < rows; j++) { ... }
-*
-* [ ] Use column-local scale for “below-pivot” tests and matrix-global scale for clamping.
-*     - You already use bestAbs for below-pivot checks and maxValue/amax for clamping—keep that pattern.
-*
-* [ ] After normalizing pivot rows in RREF, set the pivot cell to exactly 1.0 and clamp “-0.0” to 0.0.
-*     - You already set pivot to 1.0; ensure any “-0.0” are cleaned when clamping.
-*
-* 🧱 Helpers & structure
-* [ ] Make helpers static where they don’t use instance state.
-*     - swapRows(...), nearlyZero(...), and a new maxAbs(double[][]) would be private static.
-*
-* [ ] Consider renaming getMaxValue() → maxAbs() (it returns the maximum absolute value).
-*     - Or update Javadoc to say “largest absolute element.”
-*
-* [ ] equalsApprox()/bucketIndex: confirm EPSILON/tolerance policy matches test helpers.
-*     - Document that equality at exactly EPSILON may differ (already noted).
-*
-* ⚙️ Performance / future work
-* [ ] inverse(): current adjugate/determinant method is educational and O(n^4)+, unstable.
-*     - Replace with LU decomposition (with partial pivoting) or Gauss–Jordan on [A|I].
-*     - Keep current method but mark in Javadoc as “for small matrices / demonstration.”
-*
-* [ ] Determinism and portability:
-*     - If you need strict reproducibility across JVMs, consider `strictfp` methods for REF/RREF.
-*
-* 📝 Javadoc & style
-* [ ] Update Javadoc for equalsExact to match the (fixed) NaN/±0 behavior.
-* [ ] Keep @implNote on REF/RREF noting partial pivoting and absolute+relative tolerance.
-* [ ] isEmpty()/isSquare(): return expressions directly (`return rows == 0 || columns == 0;`).
-* [ ] generateRandomMatrixName(): consider ThreadLocalRandom for simplicity.
-*
-* 🧪 Tests to add/extend
-* [ ] REF invariants: pivot columns strictly increase; entries below pivots ~ 0; zero rows at bottom.
-* [ ] RREF uniqueness: compare RREFs from different elimination paths → identical under tolerance.
-* [ ] equalsExact corner cases: ±0.0, NaN vs NaN, infinities, random matrices.
-* [ ] isInvertible() tolerance: near-singular matrices where |det| ≈ 0 under scale.
-* [ ] inverse() small cases: 1×1, 2×2, and a singular matrix that should throw.
-*/
 
 /*
 TODO (Matrix Project — next ML-focused operations)
 
-[ ] RANK & NULLITY
-    [ ] rank(): compute from RREF (count non-zero rows)
-    [ ] nullity(): nCols - rank()
-    [ ] Tests: rank(null) + nullity == nCols; known dependent examples
-
-[ ] TRACE & NORMS
-    [ ] trace(): sum diagonal (square-only check)
-    [ ] Vector norms: L1, L2, Linf
-    [ ] Matrix norm: Frobenius (sqrt(sum of squares))
-    [ ] Tests: hand-checked small matrices/vectors
-
-[ ] ELEMENTWISE & MAP
-    [ ] hadamard(Matrix B): elementwise multiply (size check)
-    [ ] map(DoubleUnaryOperator f): apply f to each entry
-    [ ] Tests: compare against manual loops
-
-[ ] TRIANGULAR SOLVES
-    [ ] forwardSub(L, b): L lower-triangular with nonzero diag
-    [ ] backSub(U, b): U upper-triangular with nonzero diag
-    [ ] Tests: solve small systems; check A·x ≈ b
-
-[ ] LU DECOMPOSITION (with partial pivoting)
-    [ ] lu(): return {L, U, pivots, sign}; cache result
-    [ ] solve(b): use LU + (forwardSub/backSub)
-    [ ] det(): reuse LU (det = sign * prod(diag(U)))
-    [ ] Tests: P·A ≈ L·U; solve random systems vs inverse(b) baseline
-
-[ ] QR DECOMPOSITION (Householder)
-    [ ] qr(): return {Q, R} with Q orthonormal
-    [ ] solveLeastSquares(b): tall A; minimize ||Ax - b||2
-    [ ] Tests: QᵀQ ≈ I, A ≈ Q·R; LS residual minimal vs normal equations
-
-[ ] CHOLESKY (SPD)
-    [ ] chol(): A = L·Lᵀ for symmetric positive-definite A
-    [ ] solveSPD(b): use Cholesky solves
-    [ ] Tests: reconstruct A; compare solves vs LU
-
-[ ] STATS / PREPROCESSING
-    [ ] columnMeans(), columnStds()
-    [ ] centered(): subtract column means
-    [ ] standardized(): z-score by column
-    [ ] covariance(): (1/(m-1)) * centered(A)ᵀ * centered(A)
-    [ ] correlation(): from covariance + stds
-    [ ] Tests: small dataset with known results
-
-[ ] PROJECTIONS & ORTHONORMAL BASES
-    [ ] orthonormalize(): Modified Gram–Schmidt on columns
-    [ ] projectOntoColSpace(b): use QR
-    [ ] Tests: ‖b - projection‖ ≤ ‖b - any other Ax‖
-
-[ ] POWER ITERATION (top eigenpair)
-    [ ] powerIteration(int maxIters, double tol): returns (λ, v)
-    [ ] Tests: Rayleigh quotient close to λ; ‖A v - λ v‖ small
-
-[ ] PSEUDOINVERSE & RIDGE UTILITIES
-    [ ] pinv(): initial version via QR (full-rank); later via SVD
-    [ ] addLambdaI(double λ): A + λI helper
-    [ ] Tests: A·pinv(A)·A ≈ A; ridge solve sanity checks
-
-[ ] SLICING & STACKING
-    [ ] slice(r0,r1,c0,c1): half-open ranges
-    [ ] hstack(B), vstack(B): dimension checks
-    [ ] Tests: shapes & contents exact
-
-// Notes:
-/// - Cache decompositions and invalidate on mutation.
-/// - Prefer solve() over inverse() for numerical stability.
-/// - Add randomized tests alongside deterministic ones.
+See BACKLOG.md
 */
 
-/*
-TODO (Matrix caching system — lazy + versioned)
+/* TODO (Matrix cleanup + maintainability roadmap)
 
-[ ] Add versioning to Matrix
-    [ ] private int modCount = 0;  // increment on any in-place mutation
-    [ ] private void markDirty();  // bump modCount; call from all mutators
-
-[ ] Add a small cache holder
-    [ ] private final DecompositionCache cache = new DecompositionCache();
-    [ ] Only cache heavy results (RREF/REF, LU, QR; later Cholesky/SVD)
-
-[ ] Implement lazy getters with version checks
-    [ ] rref(): if cached.version == modCount, reuse; else compute+store
-    [ ] lu():   same
-    [ ] qr():   same
-
-[ ] Wire lightweight facts to cached results
-    [ ] rank(): return rref().rank
-    [ ] nullity(): return getColumns() - rank()
-    [ ] det(): return lu().determinant
-
-[ ] Ensure invalidation
-    [ ] All mutating methods call markDirty() (set, swap rows, scale rows, etc.)
-    [ ] Keep ABSOLUTE_EPSILON / RELATIVE_EPSILON consistent for cached results
-
-[ ] (Optional) Thread-safety
-    [ ] Synchronize compute path or use double-checked locking if needed
-
-[ ] (Optional) Tests
-    [ ] rank() called twice without mutation → computes once
-    [ ] mutate one entry → rank() recomputes
-*/
+See BACKLOG.md
+ */
 
 /**
  * Represents a two-dimensional numerical matrix and provides basic matrix algebra operations.
@@ -224,10 +48,13 @@ TODO (Matrix caching system — lazy + versioned)
  *
  * @author Chris Mitchell
  */
-public class Matrix {
+public final class Matrix {
+	
+	// ------
+	// FIELDS
+	// ------
 
 	private int rows, columns;
-	private int modCount = 0;
 	private String name;
 	private boolean savedToDisk, readonly;
 
@@ -238,8 +65,33 @@ public class Matrix {
 	@JsonIgnore
 	private double[][] matrix;
 
+	/**
+	 * Records and declarations for result caching.
+	 */
+	@JsonIgnore
+	private int modCount = 0;
+	
+	private static record REFResult(Matrix ref, int rank, int version) {}
+	private static record RREFResult(Matrix rref, int rank, int version) {}
+	private static record LUResult(Matrix L, Matrix U, int[] pivots, int sign, double determinant, int version) {}
+	private static record QRResult(Matrix Q, Matrix R, int version) {}
+	
+	private static final class CachedResults {
+		REFResult ref = null;
+		RREFResult rref = null;
+		LUResult lu = null;
+		QRResult qr = null;
+	}
+	
 	private static final Logger log = LoggerFactory.getLogger(Matrix.class);
+	
+	@JsonIgnore
+	private final CachedResults cache = new CachedResults();
 
+	// ------------
+	// CONSTRUCTORS
+	// ------------
+	
 	/**
 	 * Default constructor required by Jackson.
 	 */
@@ -257,7 +109,7 @@ public class Matrix {
 	public Matrix(double[][] source) {
 
 		setMatrix(source);
-		this.name = generateRandomMatrixName();
+		this.name = MatrixUtils.generateRandomMatrixName();
 
 	}
 
@@ -286,8 +138,8 @@ public class Matrix {
 	 */
 	public Matrix(int rows, int columns, String name, boolean savedToDisk) {
 
-		if (rows < 0 || columns < 0) {
-			throw new IllegalArgumentException("Rows or columns are negative: rows = " + rows + ", columns = " + columns + ".");
+		if (rows < 1 || columns < 1) {
+			throw new IllegalArgumentException("Minimum of 1 row and 1 column: rows = " + rows + ", columns = " + columns + ".");
 		}
 		this.rows = rows;
 		this.columns = columns;
@@ -340,47 +192,79 @@ public class Matrix {
 		this.readonly = false;
 
 	}
-	/*
-	 * private void markDirty() {
-	 * 
-	 * modCount++;
-	 * 
-	 * }
-	 * 
-	 * public record RrefResult(Matrix rref, int rank) {}
-	 * 
-	 * public record LuResult(Matrix L, Matrix U, int[] pivots, int sign, double
-	 * determinant) {}
-	 * 
-	 * public record QrResult(Matrix Q, Matrix R) {}
-	 * 
-	 * private static final class DecompositionCache { Versioned<RrefResult> rref;
-	 * Versioned<LuResult> lu; Versioned<QrResult> qr; }
-	 * 
-	 * private static final class Versioned<T> { final int version; final T value;
-	 * Versioned(int version, T value) { this.version = version; this.value = value;
-	 * } }
+	
+	// ----------------------
+	// ACCESSORS AND MUTATORS
+	// ----------------------
+	
+	/**
+	 * Retrieves the number of rows in the matrix.
+	 *
+	 * @return		the number of rows
 	 */
+	public int getRows() { return this.rows; }
 
 	/**
-	 * Generates a random name for a matrix with length {@code RANDOM_MATRIX_NAME_LENGTH} consisting
-	 * of random capital letters.
+	 * Retrieves the number of columns in the matrix.
 	 *
-	 * @return		the generated name
+	 * @return		the number of columns
 	 */
-	public String generateRandomMatrixName() {
+	public int getColumns() { return this.columns; }
 
-		Random random = new Random();
-		StringBuilder generatedName = new StringBuilder(RANDOM_MATRIX_NAME_LENGTH);
+	/**
+	 * Sets the name of the matrix to the given string.
+	 *
+	 * @param name		the name of the matrix
+	 */
+	public void setName(String name) { this.name = Objects.requireNonNull(name, "Matrix name cannot be null."); }
 
-		for (int i = 0; i < RANDOM_MATRIX_NAME_LENGTH; i++) {
-			generatedName.append((char) ('A' + random.nextInt(26)));
-		}
+	/**
+	 * Returns a string containing the name of the matrix.
+	 *
+	 * @return		the name of the matrix
+	 */
+	public String getName() { return this.name; }
 
-		return generatedName.toString();
+	/**
+	 * Sets the {@code readonly} flag.
+	 *
+	 * @param readonly		{@code true} if the matrix is read-only; otherwise {@code false}
+	 */
+	public void setReadOnly(boolean readonly) {
+		
+		this.readonly = readonly;
+		
+		log.debug("Matrix {} set to {}.", this.getName(), ((readonly) ? "read-only" : "mutable"));
+		
+	}
+
+	/**
+	 * Retrieves the {@code readonly} flag.
+	 *
+	 * @return		{@code true} if the matrix is read-only; otherwise {@code false}
+	 */
+	public boolean isReadOnly() { return this.readonly; }
+
+	/**
+	 * Sets the {@code savedToDisk} flag.
+	 *
+	 * @param savedToDisk		{@code true} if saved to disk, {@code false} otherwise
+	 */
+	public void setSavedToDisk(boolean savedToDisk) {
+		
+		this.savedToDisk = savedToDisk;
+		
+		log.debug("Matrix {} set to {}.", this.getName(), ((savedToDisk) ? "saved to disk" : "not saved to disk"));
 
 	}
 
+	/**
+	 * Retrieves the {@code savedToDisk} flag.
+	 *
+	 * @return		{@code true} if saved to disk, {@code false} otherwise
+	 */
+	public boolean isSavedToDisk() { return this.savedToDisk; }
+	
 	/**
 	 * Sets the value of the matrix element at {@code row} and {@code column}.
 	 *
@@ -393,22 +277,11 @@ public class Matrix {
 	 */
 	public void setValue(int row, int column, double value) {
 
-		final int rows = this.getRows();
-		final int columns = this.getColumns();
-
-		if (this.readonly) {
-			log.warn("An attempt was made to write to a read-only matrix in {}.", LogUtils.methodAtDepth(3));
-			throw new UnsupportedOperationException("The values of a read-only matrix can not be set.");
-		}
-		if (row < 0 || row >= rows || column < 0 || column >= columns) {
-			log.warn("An attempt was made to write a value to a matrix with invalid indices" +
-					 "in {}: [{}, {}] index is out of bounds. Matrix size is [{}, {}]",
-					 LogUtils.methodAtDepth(3), row, column, rows, columns);
-			throw new IndexOutOfBoundsException(String.format("Invalid index: [%d, %d]. The index does not fall within the size of the matrix [%d, %d].",
-															  row, column, rows, columns));
-		}
+		checkNotReadOnly();
+		checkIndex(row, column);
 
 		this.matrix[row][column] = value;
+		markDirty();
 		log.trace("Set matrix[{}][{}] to {}.", row, column, value);
 
 	}
@@ -424,16 +297,7 @@ public class Matrix {
 	 */
 	public double getValue(int row, int column) {
 
-		final int rows = this.getRows();
-		final int columns = this.getColumns();
-
-		if (row < 0 || row >= rows || column < 0 || column >= columns) {
-			log.warn("An attempt was made to read a value from a matrix with invalid indices" +
-					 "in {}: [{}, {}] index is out of bounds. Matrix size is [{}, {}]",
-					 LogUtils.methodAtDepth(4), row, column, rows, columns);
-			throw new IndexOutOfBoundsException(String.format("Invalid index: [%d, %d]. The index does not fall within the size of the matrix [%d, %d].",
-															  row, column, rows, columns));
-		}
+		checkIndex(row, column);
 
 		double value = this.matrix[row][column];
 		log.trace("Retrieved element {} from matrix[{}][{}].", value, row, column);
@@ -441,213 +305,18 @@ public class Matrix {
 
 	}
 
-	/**
-	 * Retrieves the number of rows in the matrix.
-	 *
-	 * @return		the number of rows
-	 */
-	public int getRows() {
-
-		return this.rows;
-
-	}
-
-	/**
-	 * Retrieves the number of columns in the matrix.
-	 *
-	 * @return		the number of columns
-	 */
-	public int getColumns() {
-
-		return this.columns;
-	}
-
-	/**
-	 * Sets the name of the matrix to the given string.
-	 *
-	 * @param name		the name of the matrix
-	 */
-	public void setName(String name) {
-
-	    this.name = Objects.requireNonNull(name, "Matrix name cannot be null.");
-
-	}
-
-	/**
-	 * Returns a string containing the name of the matrix.
-	 *
-	 * @return		the name of the matrix
-	 */
-	public String getName() {
-
-		return this.name;
-
-	}
-
-	/**
-	 * Sets the {@code readonly} flag.
-	 *
-	 * @param readonly		{@code true} if the matrix is read-only; otherwise {@code false}
-	 */
-	public void setReadOnly(boolean readonly) {
-
-		this.readonly = readonly;
-
-		log.debug("Matrix {} set to {}.", this.getName(), ((readonly) ? "read-only" : "mutable"));
-
-	}
-
-	/**
-	 * Retrieves the {@code readonly} flag.
-	 *
-	 * @return		{@code true} if the matrix is read-only; otherwise {@code false}
-	 */
-	public boolean isReadOnly() {
-
-		return this.readonly;
-
-	}
-
-	/**
-	 * Sets the {@code savedToDisk} flag.
-	 *
-	 * @param savedToDisk		{@code true} if saved to disk, {@code false} otherwise
-	 */
-	public void setSavedToDisk(boolean savedToDisk) {
-
-		this.savedToDisk = savedToDisk;
-
-		log.debug("Matrix {} set to {}.", this.getName(), ((savedToDisk) ? "saved to disk" : "not saved to disk"));
-
-	}
-
-	/**
-	 * Retrieves the {@code savedToDisk} flag.
-	 *
-	 * @return		{@code true} if saved to disk, {@code false} otherwise
-	 */
-	public boolean isSavedToDisk() {
-
-		return this.savedToDisk;
-
-	}
-
-	/**
-	 * Resets {@code rows} and {@code columns} from {@code source}.
-	 * <p>
-	 * Copies values defensively.
-	 * </p>
-	 *
-	 * @param source		the elements of the matrix as a double[][]
-	 * @throws UnsupportedOperationException		if an attempt is made to modify a read-only matrix
-	 * @throws NullPointerException					if the {@code source} array is equal to null or contains
-	 * 												null rows
-	 * @throws IllegalArgumentException				if the {@code source} array does not contain at
-	 * 												least one row or column or is not rectangular
-	 */
-	@JsonProperty("matrix")
-	private void setMatrix(double[][] source) {
-
-	    if (this.readonly) {
-	        log.warn("Attempt to set matrix data on read-only matrix {}.", this.name);
-	        throw new UnsupportedOperationException("Cannot modify a read-only matrix.");
-	    }
-
-		Objects.requireNonNull(source, "Source array must not be null.");
-
-	    if (source.length == 0 || source[0].length == 0) {
-	        throw new IllegalArgumentException("Matrix must have at least one row and one column.");
-	    }
-
-	    final int columns = source[0].length;
-	    for (double[] row : source) {
-			Objects.requireNonNull(row, "Matrix data must not contain null rows.");
-	        if (row.length != columns) {
-	            throw new IllegalArgumentException("Matrix rows must have the same length.");
-	        }
-	    }
-
-	    double[][] copy = new double[source.length][columns];
-	    for (int i = 0; i < source.length; i++) {
-	        System.arraycopy(source[i], 0, copy[i], 0, columns);
-	    }
-
-	    this.rows = source.length;
-	    this.columns = columns;
-	    this.matrix = copy;
-
-	}
-
-	/**
-	 * Retrieves a copy of the matrix elements as a double[][].
-	 * <p>
-	 * The elements are copied from the internal {@code matrix} array to allow for
-	 * modifications.
-	 * </p>
-	 *
-	 * @return		a deep copy of the matrix values so that the returned array is
-	 * 				safe to modify
-	 */
-	@JsonProperty("matrix")
-	private double[][] getMatrix() {
-
-	    double[][] copy = new double[this.rows][this.columns];
-	    for (int i = 0; i < this.rows; i++) {
-	        System.arraycopy(this.matrix[i], 0, copy[i], 0, this.columns);
-	    }
-	    return copy;
-
-	}
-
-	/**
-	 * Returns a string representation of the matrix.
-	 *
-	 * @return		a short representation of the matrix
-	 */
-	@Override
-	public String toString() {
-
-		return toShortString();
-
-	}
-
-	/**
-	 * Returns a compact, bracketed representation of matrix values.
-	 *
-	 * @return		a short representation of the matrix
-	 */
-	public String toShortString() {
-
-		return MatrixUtils.toShortString(this);
-
-	}
-
-	/**
-	 * Returns a pretty representation of matrix values.
-	 *
-	 * @return		a pretty representation of the matrix
-	 */
-	public String toPrettyString() {
-
-		return MatrixUtils.toPrettyString(this);
-
-	}
-
+	// --------------------------------------------------------------------------
+	// SHAPE AND FACTS
+	// Pure queries about this matrix. No mutation; some methods may use cached
+	// decompositions for performance and are recomputed when the matrix mutates.
+	// --------------------------------------------------------------------------
+	
 	/**
 	 * Tests if the matrix is empty (either 0 x 0, 0 x n, or n x 0).
 	 *
 	 * @return		{@code true} if {@code rows == 0 || columns == 0}, otherwise {@code false}
 	 */
-	@JsonIgnore
-	public boolean isEmpty() {
-
-		if (this.rows == 0 || this.columns == 0) {
-			return true;
-		} else {
-			return false;
-		}
-
-	}
+	@JsonIgnore public boolean isEmpty() { return this.rows == 0 || this.columns == 0; }
 
 	/**
 	 * Tests if the matrix is square (n x n).
@@ -655,15 +324,7 @@ public class Matrix {
 	 * @return		{@code true} if the matrix is square, {@code false} otherwise
 	 */
 	@JsonIgnore
-	public boolean isSquare() {
-
-		if (this.rows == this.columns) {
-			return true;
-		} else {
-			return false;
-		}
-
-	}
+	public boolean isSquare() { return this.rows == this.columns; }
 
 	/**
 	 * Tests if the matrix is invertible {@code det(matrix) != 0}.
@@ -674,173 +335,92 @@ public class Matrix {
 	public boolean isInvertible() {
 
 		final double det = determinant();
-		final double maxValue = getMaxValue();
+		final double scale = MatrixUtils.safeScale(this.getMatrix());
 
-		if (!nearlyZero(det, maxValue)) {
+		if (!MatrixUtils.nearlyZero(det, scale)) {
 			return true;
 		} else {
 			return false;
 		}
 
 	}
-
+	
 	/**
-	 * Tests whether two matrices are approximately equal to one another.
+	 * Returns the rank of the given matrix.
 	 * <p>
-	 * The method calls {@code bucketIndex()} to put doubles into buckets
-	 * for comparison. Buckets are width {@code 2 * EPSILON}, so the method
-	 * makes pairs with {@code |a − b| < EPSILON} equal; equality at exactly
-	 * {@code EPSILON} may differ.
+	 * If the value of rank is cached, return that. Otherwise, return a new computation using ref().
 	 * </p>
-	 * <p>
-	 * NaN compares equal only to NaN.
-	 * </p>
-	 *
-	 * @param matrix	a matrix to compare to the implicit values
-	 * @return			{@code true} if the matrix elements are within EPSILON of
-	 * 					each other, {@code false} if any element is not
+	 * 
+	 * @return		the rank as an integer
 	 */
-	public boolean equalsApprox(Matrix matrix) {
-
-	    Objects.requireNonNull(matrix, "Matrix to compare cannot be null.");
-
-	    final int rows = this.getRows();
-	    final int columns = this.getColumns();
-
-		if (this == matrix) {
-			return true;
+	public int rank() {
+		
+		int rank;
+		if (cache.ref != null && cache.ref.version == modCount) {
+			rank = cache.ref.rank;
+		} else if (cache.rref != null && cache.rref.version == modCount) {
+			rank = cache.rref.rank;
+		} else {
+			rank = ref().rank;
 		}
-		if (rows != matrix.getRows() || columns != matrix.getColumns()) {
-			return false;
-		}
-		for (int i = 0; i < rows; i++) {
-			for (int j = 0; j < columns; j++) {
-				if (bucketIndex(this.matrix[i][j]) != bucketIndex(matrix.matrix[i][j])) {
-					return false;
-				}
-			}
-		}
-		return true;
+		return rank;
+	}
+	
+	/**
+	 * Returns the nullity of the given matrix as matrix rank subtracted from the number of columns.
+	 * 
+	 * @return
+	 */
+	public int nullity() {
+
+		return this.columns - rank();
 
 	}
-
+	
 	/**
-	 * Tests whether two matrices are exactly equal to one another.
-	 * <p>
-	 * Treats {@code -0.0} and {@code +0.0} as equal; any comparison with {@code NaN}
-	 * is unequal except when compared to one another ({@code NaN == NaN}).
-	 * </p>
+	 * Calls {@code Determinants.calculateDeterminantRecursively()} after performing some checks.
 	 *
-	 * @param matrix	a matrix to compare to the implicit values
-	 * @return			{@code true} if the matrix elements are exactly equal to
-	 * 					one another, {@code false} otherwise
+	 * @return			the calculated determinant
+	 * @implNote 		For n > 2 this delegates to recursive expansion via {@link Determinants}.
+	 *           		Prefer LU (when available) for performance and stability.
 	 */
-	public boolean equalsExact(Matrix matrix) {
+	public double determinant() {
 
-	    final int rows = this.getRows();
-	    final int columns = this.getColumns();
+		LogUtils.logMethodEntry(log);
 
-		if (this == matrix) {
-			return true;
+		if (!this.isSquare()) {
+			throw new IllegalArgumentException("Determinant is undefined for non-square matrices.");
 		}
-		if (rows != matrix.getRows() || columns != matrix.getColumns()) {
-			return false;
+		if (this.isEmpty()) {
+			throw new IllegalArgumentException("Determinant is undefined for empty matrices.");
 		}
-		for (int i = 0; i < rows; i++) {
-			for (int j = 0; j < columns; j++) {
-				if (this.matrix[i][j] == 0.0 && matrix.matrix[i][j] == 0.0) {
-					continue;
-				}
-				if (Double.isNaN(this.matrix[i][j]) && Double.isNaN(matrix.matrix[i][j])) {
-					continue;
-				}
-				if (this.matrix[i][j] != matrix.matrix[i][j]) {
-					return false;
-				}
-			}
-		}
-		return true;
+
+		double det = Determinants.calculateDeterminantRecursively(this.getMatrix());
+		log.debug("Determinant of {} found for matrix {}.", det, this);
+		return det;
 
 	}
-
+	
 	/**
-	 * Compares this matrix to the specified object for exact equality.
-	 * <p>
-	 * Equality is strict by class (using {@code getClass()}) and element-wise
-	 * exact.
-	 * </p>
-	 *
-	 * @param object 		the object to compare with
-	 * @return 				{@code true} if {@code object} is a {@code Matrix} of the same class,
-	 *        				dimensions, and with exactly equal elements; otherwise {@code false}
+	 * Calls {@code Determinants.minorMatrix()} to generate a minor matrix of the receiver matrix
+	 * by dropping the {@code row} and {@code column} specified.
+	 * 
+	 * @param row			the row to drop
+	 * @param column		the column to drop
+	 * @return				a Matrix object with the resulting minor matrix
 	 */
-	@Override
-	public boolean equals(Object object) {
-
-	    if (this == object) {
-	    	return true;
-	    }
-	    if (!(object instanceof Matrix other)) {
-			return false;
-		}
-		return equalsExact(other);
-
+	public Matrix minorMatrix(int row, int column) {
+		
+		Matrix minorMatrix = new Matrix(Determinants.minorMatrix(this.getMatrix(), row, column), "MINOR");
+		
+		return minorMatrix;
 	}
 
-	/**
-	 * Generates a hash code representing the matrix.
-	 *
-	 * @return			the hash code as an integer
-	 * @implNote 		Normalizing -0.0 to +0.0 and using the IEEE 754 bit layout in
-	 * 					row-major order. Created with the help of ChatGPT (OpenAI).
-	 */
-	@Override
-	public int hashCode() {
-
-		long seed = 1;
-		final int rows = this.getRows();
-		final int columns = this.getColumns();
-
-		seed = (seed * 31) + rows;
-		seed = (seed * 31) + columns;
-
-		for (int i = 0; i < rows; i++) {
-			for (int j = 0; j < columns; j++) {
-	            long bits = (this.matrix[i][j] == 0.0 ? 0 : Double.doubleToLongBits(this.matrix[i][j]));
-	            int elementHash = (int) (bits ^ (bits >>> 32));
-				seed = (seed * 31) + elementHash;
-			}
-		}
-		return (int) (seed ^ (seed >>> 32));
-
-	}
-
-	/**
-	 * Bucketing with width {@code 2 * EPSILON} so values with {@code |a − b| < EPSILON} compare equal;
-	 * equality at exactly {@code EPSILON} may differ.
-	 * <p>
-	 * Normalizes {@code -0.0} to {@code +0.0}. {@code NaN}, {@code +∞}, and {@code −∞} map to sentinel
-	 * bucket values.
-	 * </p>
-	 *
-	 * @param value			a double to be quantized
-	 * @return				the bucket index
-	 */
-	public long bucketIndex(double value) {
-
-		if (Double.isNaN(value)) {
-			return NaN_SENTINEL;
-		} else if (value == Double.POSITIVE_INFINITY) {
-			return POSITIVE_INFINITY_SENTINEL;
-		} else if (value == Double.NEGATIVE_INFINITY) {
-			return NEGATIVE_INFINITY_SENTINEL;
-		} else if (value == 0.0) {
-			value = 0.0;
-		}
-		return Math.round(value / (2 * EPSILON));
-
-	}
-
+	// -------------------------------------------------
+	// CORE API
+	// Contains the methods for basic matrix arithmetic.
+	// -------------------------------------------------
+	
 	/**
 	 * Adds this matrix to the given matrix, provided they are both of the same size.
 	 * <p>
@@ -1013,173 +593,6 @@ public class Matrix {
 	}
 
 	/**
-	 * Gets the sign of the matrix at a specific location
-	 * <p>
-	 * <pre>{@code
-	 * ┌           ┐
-	 * │  +  -  +  │
-	 * │  -  +  -  │
-	 * │  +  -  +  │
-	 * └           ┘
-	 * }</pre>
-	 * </p>
-	 *
-	 * @param row			the row of the sign
-	 * @param column		the column of the sign
-	 * @return				the sign {@code (-1)^(i + j)}
-	 */
-	private int sign(int row, int column) {
-
-		return ((row + column) % 2) == 0 ? 1 : -1;
-
-	}
-
-	/**
-	 * Calculates the cofactor of the matrix element at {@code [row, column]}.
-	 *
-	 * @param row			the row to be removed
-	 * @param column		the column to be removed
-	 * @return				the cofactor of the matrix element
-	 */
-	private double cofactor(int row, int column) {
-
-		Matrix minorMatrix = minorMatrix(row, column);
-		double minor = calculateDeterminantRecursively(minorMatrix);
-		double cofactor = sign(row, column) * minor;
-
-		return cofactor;
-
-	}
-
-	/**
-	 * Calculates the matrix of cofactors for the receiver matrix.
-	 *
-	 * @return		the matrix of cofactors
-	 */
-	public Matrix cofactors() {
-
-		LogUtils.logMethodEntry(log);
-
-		final int rows = this.getRows();
-		final int columns = this.getColumns();
-
-		Matrix cofactors = new Matrix(rows, columns, "C(" + this.getName() + ")", false);
-		for (int i = 0; i < rows; i++) {
-			for (int j = 0; j < columns; j++) {
-				double cof = cofactor(i, j);
-				cofactors.setValue(i, j, cof);
-			}
-		}
-
-		log.debug("Cofactor matrix {} calculated from matrix {}.", cofactors, this);
-		return cofactors;
-
-	}
-
-	/**
-	 * Generates a matrix which is the minor matrix of the receiver matrix at {@code [row, column]}.
-	 * <p>
-	 * The minor matrix is constructed by taking the receiver matrix and removing {@code row} and {@code column}.
-	 * </p>
-	 *
-	 * @param row			the row to remove
-	 * @param column		the column to remove
-	 * @return				the minor matrix
-	 */
-	public Matrix minorMatrix(int row, int column) {
-
-		LogUtils.logMethodEntry(log);
-
-		final int rows = this.getRows();
-		final int columns = this.getColumns();
-
-	    if (row < 0 || row >= rows) {
-	        throw new IndexOutOfBoundsException("row " + row + " out of bounds [0..." + (rows - 1) + "]");
-	    }
-	    if (column < 0 || column >= columns) {
-	        throw new IndexOutOfBoundsException("column " + column + " out of bounds [0..." + (columns - 1) + "]");
-	    }
-	    if (rows <= 1 || columns <= 1) {
-	        throw new IllegalArgumentException("Minor is undefined for matrices smaller than 2 x 2.");
-	    }
-
-		Matrix minorMatrix = new Matrix(rows - 1, columns - 1, "MINOR(" + this.getName() + ")", false);
-
-	    int newRow = 0;
-	    for (int i = 0; i < rows; i++) {
-	        if (i == row) {
-	        	continue;
-	        }
-	        int newColumn = 0;
-	        for (int j = 0; j < columns; j++) {
-	            if (j == column) {
-	            	continue;
-	            }
-	            minorMatrix.setValue(newRow, newColumn, this.getValue(i, j));
-	            newColumn++;
-	        }
-	        newRow++;
-	    }
-
-	    log.debug("Minor matrix {} calculated from {} at [{}, {}]", minorMatrix, this, row, column);
-	    return minorMatrix;
-
-	}
-
-	/**
-	 * Calculates the determinant of a matrix recursively.
-	 * <p>
-	 * {@code det(A) = Sum(j = 1...n) ((-1)^(1 + j)) * a(1, j) * minor(1, j)}
-	 * </p>
-	 *
-	 * @param matrix		the matrix for which to find the determinant
-	 * @return				the calculated determinant
-	 */
-	private double calculateDeterminantRecursively(Matrix matrix) {
-
-		final int rows = matrix.getRows();
-		final int columns = matrix.getColumns();
-
-		if (rows == 1) {
-			return matrix.getValue(0, 0);
-		}
-		if (rows == 2) {
-			return (matrix.getValue(0, 0) * matrix.getValue(1, 1)) - (matrix.getValue(0, 1) * matrix.getValue(1, 0));
-		}
-
-		double det = 0.0;
-		for (int j = 0; j < columns; j++) {
-			Matrix minorMatrix = matrix.minorMatrix(0, j);
-			det += sign(0, j) * matrix.getValue(0, j) * calculateDeterminantRecursively(minorMatrix);
-		}
-
-		return det;
-
-	}
-
-	/**
-	 * Calls calculateDeterminantRecursively() after performing some checks.
-	 *
-	 * @return			the calculated determinant
-	 */
-	public double determinant() {
-
-		LogUtils.logMethodEntry(log);
-
-		if (!this.isSquare()) {
-			throw new IllegalArgumentException("Determinant is undefined for non-square matrices.");
-		}
-		if (this.isEmpty()) {
-			throw new IllegalArgumentException("Determinant is undefined for empty matrices.");
-		}
-
-		double det = calculateDeterminantRecursively(this);
-		log.debug("Determinant of {} found for matrix {}.", det, this);
-		return det;
-
-	}
-
-	/**
 	 * Calculates the transpose of the matrix.
 	 *
 	 * @return			the transpose of the matrix
@@ -1226,6 +639,304 @@ public class Matrix {
 		return inverse;
 
 	}
+	
+	/**
+	 * Calculates the matrix of cofactors for the matrix parameter.
+	 *
+	 * @return		the matrix of cofactors
+	 */
+	public Matrix cofactors() {
+
+		LogUtils.logMethodEntry(log);
+
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+
+		Matrix cofactors = new Matrix(rows, columns, "C(" + this.getName() + ")", false);
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < columns; j++) {
+				double cofactor = Determinants.cofactor(this.getMatrix(), i, j);
+				cofactors.setValue(i, j, cofactor);
+			}
+		}
+
+		log.debug("Cofactor matrix {} calculated from matrix {}.", cofactors, this);
+		return cofactors;
+
+	}
+	
+	// -------------------------------
+	// DECOMPOSITIONS
+	// Contains factorization methods.
+	// -------------------------------
+
+	/**
+	 * Calculates the row echelon form (REF) of the receiver Matrix and returns
+	 * the REF as a new Matrix object.
+	 *
+	 * @return		the REFResult containing the matrix
+	 */
+	public REFResult ref() {
+		
+		LogUtils.logMethodEntry(log);
+		
+	    if (cache.ref != null && cache.ref.version == modCount) {
+	    	log.debug("Returned cached value of REF matrix {}.", cache.ref.ref());
+	        return cache.ref;
+	    }
+		
+	    double[][] matrixValues = this.getMatrix();
+	    double[][] ref = ReducedForm.calculateREF(matrixValues);
+		int rank = ReducedForm.calculateRank(ref);
+		
+		Matrix refMatrix = new Matrix(ref, "REF(" + this.getName() + ")");
+		refMatrix.setReadOnly(true);
+		cache.ref = new REFResult(refMatrix, rank, modCount);
+
+		log.debug("Calculated REF matrix {} from {}.", refMatrix, this);
+		return cache.ref;
+		
+	}
+	
+	/**
+	 * Access the REF Matrix contained within the cached results.
+	 * <p>
+	 * Returns an immutable, cached view; recomputed only when the source matrix mutates.
+	 * </p>
+	 * 
+	 * @return		the cached REF matrix
+	 */
+	public Matrix rowEchelonForm() {
+		
+		return ref().ref();
+		
+	}
+
+	/**
+	 * Calculates the reduced row echelon form (RREF) of the receiver Matrix and returns
+	 * the RREF as a new Matrix object.
+	 *
+	 * @return		the RREFResult containing the matrix
+	 */
+	public RREFResult rref() {
+
+		LogUtils.logMethodEntry(log);
+
+	    if (cache.rref != null && cache.rref.version == modCount) {
+	    	log.debug("Returned cached value of RREF matrix {}.", cache.rref.rref());
+	        return cache.rref;
+	    }
+		
+	    double[][] matrixValues = this.getMatrix();
+	    double[][] rref = ReducedForm.calculateRREF(matrixValues);
+	    int rank = ReducedForm.calculateRank(rref);
+	    
+		Matrix rrefMatrix = new Matrix(rref, "RREF(" + this.getName() + ")");
+		rrefMatrix.setReadOnly(true);
+		cache.rref = new RREFResult(rrefMatrix, rank, modCount);
+
+		log.debug("Calculated RREF matrix {} from {}.", rrefMatrix, this);
+		return cache.rref;
+
+	}
+	
+	/**
+	 * Access the RREF Matrix contained within the cached results.
+	 * <p>
+	 * Returns an immutable, cached view; recomputed only when the source matrix mutates.
+	 * </p>
+	 * 
+	 * @return		the cached RREF matrix
+	 */
+	public Matrix reducedRowEchelonForm() {
+		
+		return rref().rref();
+		
+	}
+
+	// --------------------------------------------------
+	// EQUALITY, HASHING, STRING REPRESENTATIONS
+	// --------------------------------------------------
+	
+	/**
+	 * Tests whether two matrices are approximately equal to one another.
+	 * <p>
+	 * The method calls {@code bucketIndex()} to put doubles into buckets
+	 * for comparison. Buckets are width {@code 2 * EPSILON}, so the method
+	 * makes pairs with {@code |a − b| < EPSILON} equal; equality at exactly
+	 * {@code EPSILON} may differ.
+	 * </p>
+	 * <p>
+	 * NaN compares equal only to NaN.
+	 * </p>
+	 *
+	 * @param matrix	a matrix to compare to the implicit values
+	 * @return			{@code true} if the matrix elements are within EPSILON of
+	 * 					each other, {@code false} if any element is not
+	 */
+	public boolean equalsApprox(Matrix matrix) {
+
+	    Objects.requireNonNull(matrix, "Matrix to compare cannot be null.");
+
+	    final int rows = this.getRows();
+	    final int columns = this.getColumns();
+
+		if (this == matrix) {
+			return true;
+		}
+		if (rows != matrix.getRows() || columns != matrix.getColumns()) {
+			return false;
+		}
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < columns; j++) {
+				if (MatrixUtils.bucketIndex(this.matrix[i][j]) != MatrixUtils.bucketIndex(matrix.matrix[i][j])) {
+					return false;
+				}
+			}
+		}
+		return true;
+
+	}
+
+	/**
+	 * Tests whether two matrices are exactly equal to one another.
+	 * <p>
+	 * Treats {@code -0.0} and {@code +0.0} as equal; any comparison with {@code NaN}
+	 * is unequal except when compared to one another ({@code NaN == NaN}).
+	 * </p>
+	 *
+	 * @param matrix	a matrix to compare to the implicit values
+	 * @return			{@code true} if the matrix elements are exactly equal to
+	 * 					one another, {@code false} otherwise
+	 */
+	public boolean equalsExact(Matrix matrix) {
+
+	    final int rows = this.getRows();
+	    final int columns = this.getColumns();
+
+		if (this == matrix) {
+			return true;
+		}
+		if (rows != matrix.getRows() || columns != matrix.getColumns()) {
+			return false;
+		}
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < columns; j++) {
+				if (this.matrix[i][j] == 0.0 && matrix.matrix[i][j] == 0.0) {
+					continue;
+				}
+				if (Double.isNaN(this.matrix[i][j]) && Double.isNaN(matrix.matrix[i][j])) {
+					continue;
+				}
+				if (this.matrix[i][j] != matrix.matrix[i][j]) {
+					return false;
+				}
+			}
+		}
+		return true;
+
+	}
+
+	/**
+	 * Compares this matrix to the specified object for exact equality.
+	 * <p>
+	 * Equality is strict by class (using {@code getClass()}) and element-wise
+	 * exact.
+	 * </p>
+	 *
+	 * @param object 		the object to compare with
+	 * @return 				{@code true} if {@code object} is a {@code Matrix} of the same class,
+	 *        				dimensions, and with exactly equal elements; otherwise {@code false}
+	 */
+	@Override
+	public boolean equals(Object object) {
+
+	    if (this == object) {
+	    	return true;
+	    }
+	    if (!(object instanceof Matrix other)) {
+			return false;
+		}
+		return equalsExact(other);
+
+	}
+
+	/**
+	 * Generates a hash code representing the matrix.
+	 *
+	 * @return			the hash code as an integer
+	 * @implNote 		Normalizing -0.0 to +0.0 and NaNs using the IEEE 754 bit layout in
+	 * 					row-major order. Created with the help of ChatGPT (OpenAI).
+	 */
+	@Override
+	public int hashCode() {
+		
+		long seed = 1;
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+
+		seed = (seed * 31) + rows;
+		seed = (seed * 31) + columns;
+
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < columns; j++) {
+				double element = this.getValue(i, j);
+				if (element == 0.0) {
+					element = 0.0;
+				}
+				if (Double.isNaN(element)) {
+					element = Double.NaN;
+				}
+	            long bits = (this.matrix[i][j] == 0.0 ? 0 : Double.doubleToLongBits(this.matrix[i][j]));
+	            int elementHash = (int) (bits ^ (bits >>> 32));
+				seed = (seed * 31) + elementHash;
+			}
+		}
+		return (int) (seed ^ (seed >>> 32));
+
+	}
+
+	/**
+	 * Returns a string representation of the matrix.
+	 *
+	 * @return		a short representation of the matrix
+	 */
+	@Override
+	public String toString() {
+
+		return toShortString();
+
+	}
+
+	/**
+	 * Returns a compact, bracketed representation of matrix values.
+	 *
+	 * @return		a short representation of the matrix
+	 */
+	public String toShortString() {
+		
+		log.debug("Built short string for matrix {}.", this.getName());
+
+		return MatrixUtils.toShortString(this);
+		
+	}
+
+	/**
+	 * Returns a pretty representation of matrix values.
+	 *
+	 * @return		a pretty representation of the matrix
+	 */
+	public String toPrettyString() {
+
+		log.debug("Built pretty string for matrix {}.", this.getName());
+		
+		return MatrixUtils.toPrettyString(this);
+
+	}
+
+	// ---------
+	// INTERNALS
+	// ---------
 
 	/**
 	 * Calls {@code this.getMatrix} to provide a deep copy of the matrix array
@@ -1248,240 +959,114 @@ public class Matrix {
 		return new Matrix(this.toArrayCopy(), "CopyOf" + this.getName());
 
 	}
-
+	
 	/**
-	 * Mutates the array parameter such that two rows of values are swapped
-	 *
-	 * @param source		the array to be changed
-	 * @param rowFrom		the source row
-	 * @param rowTo			the destination row
-	 */
-	private static void swapRows(double[][] source, int rowFrom, int rowTo) {
-
-		double[] temp;
-
-		temp = source[rowTo];
-		source[rowTo] = source[rowFrom];
-		source[rowFrom] = temp;
-
-	}
-
-	/**
-	 * Determines whether {@code value} is close enough to zero to effectively be zero.
+	 * Increments {@code modCount} when called.
 	 * <p>
-	 * A scale parameter is specified to determine if the value is close enough to zero
-	 * for a particular operation.
+	 * This is used for determining cache versions.
+	 * </p>
+	 */
+	private void markDirty() {
+		 
+		modCount++;
+	 
+	}
+	
+	/**
+	 * Resets {@code rows} and {@code columns} from {@code source}.
+	 * <p>
+	 * Copies values defensively.
 	 * </p>
 	 *
-	 * @param value			the value to test
-	 * @param scale			a scale factor
-	 * @return				{@code true} if the value is nearly zero, {@code false} otherwise
+	 * @param source		the elements of the matrix as a double[][]
+	 * @throws UnsupportedOperationException		if an attempt is made to modify a read-only matrix
+	 * @throws NullPointerException					if the {@code source} array is equal to null or contains
+	 * 												null rows
+	 * @throws IllegalArgumentException				if the {@code source} array does not contain at
+	 * 												least one row or column or is not rectangular
 	 */
-	private static boolean nearlyZero(double value, double scale) {
+	@JsonProperty("matrix")
+	private void setMatrix(double[][] source) {
+		
+		Objects.requireNonNull(source, "Source array must not be null.");
 
-	    return Math.abs(value) <= ABSOLUTE_EPSILON + (RELATIVE_EPSILON * scale);
+		checkNotReadOnly();
 
-	}
-
-	/**
-	 * Finds the largest element in the receiver Matrix.
-	 *
-	 * @return		the largest element
-	 */
-	private double getMaxValue() {
-
-		LogUtils.logMethodEntry(log);
-
-		final int rows = this.getRows();
-		final int columns = this.getColumns();
-		double maxValue = 0.0;
-
-	    for (int i = 0; i < rows; i++) {
-	    	for (int j = 0; j < columns; j++) {
-	    		maxValue = Math.max(maxValue, Math.abs(this.getValue(i, j)));
-	    	}
-	    }
-
-	    log.debug("Found the maximum value of {} from matrix {}.", maxValue, this);
-	    return maxValue;
-
-	}
-
-	/**
-	 * Calculates the row echelon form (REF) of the receiver Matrix and returns
-	 * the REF as a new Matrix object.
-	 *
-	 * @return		the REF of the matrix
-	 * @implNote	Algorithm and refinements provided by ChatGPT (OpenAI)
-	 */
-	public Matrix rowEchelonForm() {
-
-		LogUtils.logMethodEntry(log);
-
-		final int rows = this.getRows();
-		final int columns = this.getColumns();
-		int nextRow = 0;
-		double[][] newValues = toArrayCopy();
-
-		// Get a good scale value from the matrix
-		double maxValue = getMaxValue();
-	    if (maxValue == 0.0) {
-	    	return new Matrix(newValues, "REF(" + getName() + ")");
-	    }
-
-	    // Walk left to right over the columns placing pivots top-down
-		for (int j = 0; j < columns; j++) {
-			if (nextRow >= rows) {
-				break;
-			}
-			// Choose a pivot row such that the pivot contains the largest value in the column
-			int pivotRow = -1;
-			double bestAbs = 0.0;
-			for (int i = nextRow; i < rows; i++) {
-				double valueAbs = Math.abs(newValues[i][j]);
-				if (valueAbs > bestAbs) {
-					bestAbs = valueAbs;
-					pivotRow = i;
-				}
-			}
-			// If there is no useable pivot in this column
-			if (pivotRow == -1 || nearlyZero(bestAbs, maxValue)) {
-				continue;
-			}
-			// Perform partial pivoting by swapping the pivot row up - this avoids round-off
-			// errors with the floating-point arithmetic
-			if (pivotRow != nextRow) {
-				swapRows(newValues, pivotRow, nextRow);
-			}
-			// Eliminate the values below the pivot
-			double pivot = newValues[nextRow][j];
-			for (int i = nextRow + 1; i < rows; i++) {
-				// Skip processing the row if the element is very close to 0.0
-	            if (nearlyZero(newValues[i][j], bestAbs)) {
-	            	continue;
-	            }
-	            double factor = newValues[i][j] / pivot;
-	            for (int k = j; k < columns; k++) {
-	                double updated = newValues[i][k] - (factor * newValues[nextRow][k]);
-	                // Clamp to 0.0 if the value of updated is very close to 0.0
-	                if (nearlyZero(updated, maxValue)) {
-	                	updated = 0.0;
-	                }
-		            newValues[i][k] = updated;
-	            }
+	    final int columns = source[0].length;
+	    
+	    for (double[] row : source) {
+			Objects.requireNonNull(row, "Matrix data must not contain null rows.");
+	        if (row.length != columns) {
+	            throw new IllegalArgumentException("Matrix rows must have the same length.");
 	        }
-			nextRow++;
-		}
+	    }
 
-		Matrix ref = new Matrix(newValues, "REF(" + this.getName() + ")");
-		log.debug("Calculated REF matrix {} from matrix {}.", ref, this);
-		return ref;
+	    double[][] copy = new double[source.length][columns];
+	    for (int i = 0; i < source.length; i++) {
+	        System.arraycopy(source[i], 0, copy[i], 0, columns);
+	    }
+
+	    this.rows = source.length;
+	    this.columns = columns;
+	    this.matrix = copy;
+	    markDirty();
 
 	}
 
 	/**
-	 * Calculates the reduced row echelon form (RREF) of the receiver Matrix and returns
-	 * the RREF as a new Matrix object.
+	 * Retrieves a copy of the matrix elements as a double[][].
+	 * <p>
+	 * The elements are copied from the internal {@code matrix} array to allow for
+	 * modifications.
+	 * </p>
 	 *
-	 * @return		the RREF of the matrix
-	 * @implNote	Algorithm and refinements provided by ChatGPT (OpenAI)
+	 * @return		a deep copy of the matrix values so that the returned array is
+	 * 				safe to modify
 	 */
-	public Matrix reducedRowEchelonForm() {
+	@JsonProperty("matrix")
+	private double[][] getMatrix() {
 
-		LogUtils.logMethodEntry(log);
-
-		// Start with a Matrix in row echelon form
-		Matrix ref = this.rowEchelonForm();
-		final int rows = ref.getRows();
-		final int columns = ref.getColumns();
-		double[][] newValues = ref.getMatrix();
-
-		// Get a good scale value from the row echelon form of the matrix
-		double maxValue = ref.getMaxValue();
-	    if (maxValue == 0.0) {
-	    	return new Matrix(newValues, "RREF(" + getName() + ")");
+	    double[][] copy = new double[this.rows][this.columns];
+	    for (int i = 0; i < this.rows; i++) {
+	        System.arraycopy(this.matrix[i], 0, copy[i], 0, this.columns);
 	    }
-
-	    // Build a list of pivots (first non-zero element in each row)
-		record Pivot(int row, int column) {};
-		List<Pivot> pivots = new ArrayList<>();
-	    for (int i = 0; i < rows; i++) {
-	    	int tempColumn = -1;
-	    	for (int j = 0; j < columns; j++) {
-	    		if (!nearlyZero(newValues[i][j], maxValue)) {
-	    			tempColumn = j;
-	    			break;
-	    		}
-	    	}
-	    	if (tempColumn != -1) {
-	    		pivots.add(new Pivot(i, tempColumn));
-	    	}
-	    }
-
-	    // Normalize pivot rows, eliminating from bottom to top
-	    for (int p = pivots.size() - 1; p >= 0; p--) {
-	    	int row = pivots.get(p).row();
-	    	int column = pivots.get(p).column();
-	    	// Normalize pivot row so pivot = 1
-	    	double pivot = newValues[row][column];
-	    	if (!nearlyZero(pivot, maxValue) && Math.abs(pivot - 1.0) > ABSOLUTE_EPSILON) {
-	    		for (int j = column; j < columns; j++) {
-	    			double factor = newValues[row][j] / pivot;
-	    			// Clamp value to 0.0 in case of very small round-off errors
-	    			newValues[row][j] = nearlyZero(factor, maxValue) ? 0.0 : factor;
-	    		}
-	    	}
-	    	// Clamp value to 1.0 in case of very small round-off errors
-	    	newValues[row][column] = 1.0;
-	    	// Eliminate above so that the elements above the pivot are 0
-	    	for (int i = 0; i < row; i++) {
-	    		double factor = newValues[i][column];
-	    		if (nearlyZero(factor, maxValue)) {
-	    			continue;
-	    		}
-	    		for (int j = column; j < columns; j++) {
-	    			double updated = newValues[i][j] - factor * newValues[row][j];
-	    			newValues[i][j] = nearlyZero(updated, maxValue) ? 0.0 : updated;
-	    		}
-	    	}
-	    }
-
-		Matrix rref = new Matrix(newValues, "RREF(" + this.getName() + ")");
-		log.debug("Calculated RREF matrix {} from matrix {}.", rref, this);
-		return rref;
+	    return copy;
 
 	}
-
-	public int rank() {
-
-		Matrix rref = reducedRowEchelonForm();
-		double scale = rref.getMaxValue();
-
-		int rank = 0;
-		for (double[] row : rref.getMatrix()) {
-			boolean nonZero = false;
-			for (double val : row) {
-				if (!nearlyZero(val, scale)) {
-					nonZero = true;
-					break;
-				}
-			}
-			if (nonZero) {
-				rank++;
-			}
+	
+	/**
+	 * Throws an exception if the matrix is read-only.
+	 * <p>
+	 * Used for checking whether a matrix is immutable before an attempt at mutation.
+	 * </p>
+	 * 
+	 * @throws UnsupportedOperationException	if the matrix is read-only
+	 */
+	private void checkNotReadOnly() {
+		
+		if (this.readonly) {
+		    log.warn("Attempt to write to read-only matrix in {}.", LogUtils.methodAtDepth(3));
+		    throw new UnsupportedOperationException("The values of a read-only matrix cannot be set.");			
 		}
-
-		return rank;
-
 	}
-
-	public int nullity() {
-
-		int columns = this.getColumns();
-		int rank = rank();
-
-		return columns - rank;
-
+	
+	/**
+	 * Throws an exception if the {@code row} and {@code column} values are less than 1
+	 * or greater than the size of the matrix.
+	 * 
+	 * @param row			the row value to check
+	 * @param column		the column value to check
+	 * @throws IndexOutOfBoundsException	if the parameters fail the check
+	 */
+	private void checkIndex(int row, int column) {
+		
+		if (row < 0 || row >= this.rows || column < 0 || column >= this.columns) {
+		    log.warn("Index [{}, {}] out of bounds for size [{}, {}] in {}.",
+		             row, column, rows, columns, LogUtils.methodAtDepth(3));
+		    throw new IndexOutOfBoundsException(
+		    		  String.format("Invalid index: [%d, %d] for matrix size [%d, %d].%n",
+		    				        row, column, rows, columns));
+		}	
 	}
-
+	
 }
