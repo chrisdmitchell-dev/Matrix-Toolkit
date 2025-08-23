@@ -286,6 +286,10 @@ public class Main {
 						log.warn("Tried to find the determinant of matrix {} which does not exist in memory.", matrixName);
 					}
 				}
+				case HADAMARD -> {
+					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::hadamard);
+					ScreenIO.prettyPrintMatrix(result);
+				}
 				case HELP -> {
 					String textCommand = command.args().length > 0 ? command.args()[0] : null;
 					switch (textCommand) {
@@ -336,6 +340,10 @@ public class Main {
 				}
 				case INVERSE -> {
 					Matrix result = performMatrixOperation(command.args()[0], Matrix::inverse);
+					ScreenIO.prettyPrintMatrix(result);
+				}
+				case KRONECKER -> {
+					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::kronecker);
 					ScreenIO.prettyPrintMatrix(result);
 				}
 				case L1 -> {
@@ -450,8 +458,14 @@ public class Main {
 							case "cofactors" -> {
 								result = performMatrixOperation(leftMatrix, Matrix::cofactors);
 							}
+							case "hadamard" -> {
+								result = performMatrixOperation(leftMatrix, rightMatrix, Matrix::hadamard);
+							}
 							case "inverse" -> {
 								result = performMatrixOperation(leftMatrix, Matrix::inverse);
+							}
+							case "kronecker" -> {
+								result = performMatrixOperation(leftMatrix, rightMatrix, Matrix::kronecker);
 							}
 							case "multiply" -> {
 								result = performMatrixOperation(leftMatrix, rightMatrix, Matrix::multiply);
