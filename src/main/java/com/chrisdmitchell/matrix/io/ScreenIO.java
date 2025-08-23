@@ -80,21 +80,23 @@ public class ScreenIO {
 		log.info("Printed all files in directory {}.", FILE_DIRECTORY);
 
 	}
-	
+
 	/**
-	 * Prints the determinant of a matrix.
+	 * Prints the scalar value associated with the matrix.
+	 * <p>
+	 * The output is {@code label(MATRIX_NAME) = (SCALAR_FORMAT)}
 	 * 
-	 * @param matrix		the matrix for which the determinant was calculated
-	 * @param det			the resulting determinant
+	 * @param label
+	 * @param matrixName
+	 * @param value
 	 */
-	public static void printDeterminant(Matrix matrix, double det) {
+	public static void printScalarValues(String label, String matrixName, double value) {
 		
-		LogUtils.logMethodEntry(log);	
+		LogUtils.logMethodEntry(log);
 		
-		System.out.printf("det(%s) = %s%n", matrix.getName(), DECIMAL_FORMAT.format(det));
+		System.out.printf("%s(%s) = %s%n,", label.strip(), matrixName, SCALAR_FORMAT.format(value));
 		
-		log.info("Printed the determinant {} for matrix {}.", DECIMAL_FORMAT.format(det), matrix.getName());
+		log.info("Printed {}({}) = {}.", label, matrixName, SCALAR_FORMAT.format(value));
 		
 	}
-
 }

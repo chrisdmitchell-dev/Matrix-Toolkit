@@ -34,8 +34,8 @@ public class MatrixTest {
                 	if (errors == 0) errorReport.append("Matrix inequalities:\n");
                 	errorReport.append(String.format("At [%d, %d]: expected = %s, actual = %s%n",
                 									 i, j,
-                									 DECIMAL_FORMAT.format(expectedValue),
-                									 DECIMAL_FORMAT.format(actualValue)));
+                									 MATRIX_FORMAT.format(expectedValue),
+                									 MATRIX_FORMAT.format(actualValue)));
                 	errors++;
                 }
             }
@@ -70,9 +70,9 @@ public class MatrixTest {
                 	if (errors == 0) errorReport.append("Matrix inequalities (±").append(EPSILON).append("):\n");
                 	errorReport.append(String.format("At [%d, %d]: expected = %s, actual = %s, |Δ| = %s%n",
 							 i, j,
-							 DECIMAL_FORMAT.format(expectedValue),
-							 DECIMAL_FORMAT.format(actualValue),
-							 DECIMAL_FORMAT.format(difference)));
+							 MATRIX_FORMAT.format(expectedValue),
+							 MATRIX_FORMAT.format(actualValue),
+							 MATRIX_FORMAT.format(difference)));
                 	errors++;
                 }
             }
@@ -719,6 +719,160 @@ public class MatrixTest {
 				// Expected
 		    }
 			
+		}
+
+	}
+	
+	@Nested
+	@DisplayName("Matrix.trace()")
+	class TraceTests {
+		
+		Matrix threeByThreeSequential, fourByFourSequential;
+		double threeTrace, fourTrace;
+		
+		@BeforeEach
+		void setUp() {
+			
+			threeByThreeSequential = new Matrix(new double[][] {{1, 2, 3},{4, 5, 6},{7, 8, 9}});
+			threeTrace = 15;
+			fourByFourSequential = new Matrix(new double[][] {{1, 2, 3, 4},{5, 6, 7, 8},{9, 10, 11, 12},{13, 14, 15, 16}});
+			fourTrace = 34;
+			
+		}
+
+		@Test
+		@DisplayName("trace of a 3 x 3 matrix")
+		void trace3x3() {
+			
+			double trace = threeByThreeSequential.trace();
+			
+			assertEquals(threeTrace, trace);
+
+		}
+
+		@Test
+		@DisplayName("trace of a 4 x 4 matrix")
+		void trace4x4() {
+			
+			double trace = fourByFourSequential.trace();
+			
+			assertEquals(fourTrace, trace);
+
+		}
+
+	}
+	
+	@Nested
+	@DisplayName("Matrix.l1Norm()")
+	class L1Tests {
+		
+		Matrix threeByThreeSequential, fourByFourSequential;
+		double threeL1, fourL1;
+		
+		@BeforeEach
+		void setUp() {
+			
+			threeByThreeSequential = new Matrix(new double[][] {{1, 2, 3},{4, 5, 6},{7, 8, 9}});
+			threeL1 = 18;
+			fourByFourSequential = new Matrix(new double[][] {{1, 2, 3, 4},{5, 6, 7, 8},{9, 10, 11, 12},{13, 14, 15, 16}});
+			fourL1 = 40;
+			
+		}
+		
+		@Test
+		@DisplayName("l1 norm of a 3 x 3 matrix")
+		void l13x3() {
+			
+			double l1Norm = threeByThreeSequential.l1Norm();
+			
+			assertEquals(l1Norm, threeL1);
+			
+		}
+
+		@Test
+		@DisplayName("l1 norm of a 4 x 4 matrix")
+		void l14x4() {
+			
+			double l1Norm = fourByFourSequential.l1Norm();
+			
+			assertEquals(l1Norm, fourL1);
+			
+		}
+	}
+	
+	@Nested
+	@DisplayName("Matrix.infinityNorm()")
+	class InfinityTests {
+		
+		Matrix threeByThreeSequential, fourByFourSequential;
+		double threeInfinity, fourInfinity;
+		
+		@BeforeEach
+		void setUp() {
+			
+			threeByThreeSequential = new Matrix(new double[][] {{1, 2, 3},{4, 5, 6},{7, 8, 9}});
+			threeInfinity = 24;
+			fourByFourSequential = new Matrix(new double[][] {{1, 2, 3, 4},{5, 6, 7, 8},{9, 10, 11, 12},{13, 14, 15, 16}});
+			fourInfinity = 58;
+			
+		}
+		
+		@Test
+		@DisplayName("infinity norm of a 3 x 3 matrix")
+		void infinity3x3() {
+			
+			double infinityNorm = threeByThreeSequential.infinityNorm();
+			
+			assertEquals(infinityNorm, threeInfinity);
+			
+		}
+
+		@Test
+		@DisplayName("infinity norm of a 4 x 4 matrix")
+		void infinity4x4() {
+			
+			double infinityNorm = fourByFourSequential.infinityNorm();
+			
+			assertEquals(infinityNorm, fourInfinity);
+			
+		}
+	}
+	
+	@Nested
+	@DisplayName("Matrix.frobeniusNorm()")
+	class FrobeniusTests {
+		
+		Matrix threeByThreeSequential, fourByFourSequential;
+		double threeFrobenius, fourFrobenius;
+		
+		@BeforeEach
+		void setUp() {
+			
+			threeByThreeSequential = new Matrix(new double[][] {{1, 2, 3},{4, 5, 6},{7, 8, 9}});
+			threeFrobenius = 16.8819430161;
+			fourByFourSequential = new Matrix(new double[][] {{1, 2, 3, 4},{5, 6, 7, 8},{9, 10, 11, 12},{13, 14, 15, 16}});
+			fourFrobenius = 38.6781592116;
+			
+		}
+		
+		@Test
+		@DisplayName("frobenius norm of a 3 x 3 matrix")
+		void frobenius3x3() {
+			
+			double frobeniusNorm = threeByThreeSequential.frobeniusNorm();
+			
+			assertEquals(frobeniusNorm, threeFrobenius, EPSILON, "frobenius within epsilon");
+
+		}
+
+		@Test
+		@DisplayName("frobenius norm of a 4 x 4 matrix")
+		void frobenius4x4() {
+			
+			double frobeniusNorm = fourByFourSequential.frobeniusNorm();
+			
+			assertEquals(frobeniusNorm, fourFrobenius, EPSILON, "frobenius within epsilon");
+
 		}
 
 	}

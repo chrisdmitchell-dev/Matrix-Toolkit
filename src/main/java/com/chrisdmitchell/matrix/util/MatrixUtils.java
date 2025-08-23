@@ -190,7 +190,7 @@ public final class MatrixUtils {
 		for (int i = 0; i < rows; i++) {
 			outputString.append("[");
 			for (int j = 0; j < columns; j++) {
-				outputString.append(DECIMAL_FORMAT.format(matrix.getValue(i, j)));
+				outputString.append(MATRIX_FORMAT.format(matrix.getValue(i, j)));
 				if (j != columns - 1) {
 					outputString.append(",");
 				}

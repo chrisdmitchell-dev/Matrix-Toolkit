@@ -264,7 +264,7 @@ public class Main {
 					Matrix matrix = matrices.get(matrixName);
 					if (matrix != null) {
 						double det = matrix.determinant();
-						ScreenIO.printDeterminant(matrix, det);
+						ScreenIO.printScalarValues("Determinant", matrix.getName(), det);
 					} else {
 						System.out.printf("Matrix %s does not exist in memory.%n", matrixName);
 						log.warn("Tried to find the determinant of matrix {} which does not exist in memory.", matrixName);
@@ -275,6 +275,17 @@ public class Main {
 					log.info("Exiting program.");
 					System.exit(0);
 				}
+				case FROBENIUS	 -> {
+					String matrixName = command.args().length > 0 ? command.args()[0] : null;
+					Matrix matrix = matrices.get(matrixName);
+					if (matrix != null) {
+						double frobenius = matrix.frobeniusNorm();
+						ScreenIO.printScalarValues("Frobenius Norm", matrix.getName(), frobenius);
+					} else {
+						System.out.printf("Matrix %s does not exist in memory.%n", matrixName);
+						log.warn("Tried to find the determinant of matrix {} which does not exist in memory.", matrixName);
+					}
+				}
 				case HELP -> {
 					String textCommand = command.args().length > 0 ? command.args()[0] : null;
 					switch (textCommand) {
@@ -283,8 +294,11 @@ public class Main {
 						case "cofactors" -> Action.COFACTORS.printHelp();
 						case "determinant", "det" -> Action.DETERMINANT.printHelp();
 						case "exit", "quit", "q" -> Action.EXIT.printHelp();
+						case "frobenius" -> Action.FROBENIUS.printHelp();
+						case "infinity" -> Action.INFINITY.printHelp();
 						case "input" -> Action.INPUT.printHelp();
 						case "inverse" -> Action.INVERSE.printHelp();
+						case "l1" -> Action.L1.printHelp();
 						case "list" -> Action.LIST.printHelp();
 						case "load" -> Action.LOAD.printHelp();
 						case "multiply" -> Action.MULTIPLY.printHelp();
@@ -293,8 +307,20 @@ public class Main {
 						case "rref" -> Action.RREF.printHelp();
 						case "save" -> Action.SAVE.printHelp();
 						case "subtract" -> Action.SUBTRACT.printHelp();
+						case "trace" -> Action.TRACE.printHelp();
 						case "transpose" -> Action.TRANSPOSE.printHelp();
 						default -> Action.HELP.printAllHelp();
+					}
+				}
+				case INFINITY -> {
+					String matrixName = command.args().length > 0 ? command.args()[0] : null;
+					Matrix matrix = matrices.get(matrixName);
+					if (matrix != null) {
+						double infinity = matrix.infinityNorm();
+						ScreenIO.printScalarValues("Infinity Norm", matrix.getName(), infinity);
+					} else {
+						System.out.printf("Matrix %s does not exist in memory.%n", matrixName);
+						log.warn("Tried to find the determinant of matrix {} which does not exist in memory.", matrixName);
 					}
 				}
 				case INPUT -> {
@@ -311,6 +337,17 @@ public class Main {
 				case INVERSE -> {
 					Matrix result = performMatrixOperation(command.args()[0], Matrix::inverse);
 					ScreenIO.prettyPrintMatrix(result);
+				}
+				case L1 -> {
+					String matrixName = command.args().length > 0 ? command.args()[0] : null;
+					Matrix matrix = matrices.get(matrixName);
+					if (matrix != null) {
+						double l1 = matrix.l1Norm();
+						ScreenIO.printScalarValues("L1 Norm", matrix.getName(), l1);
+					} else {
+						System.out.printf("Matrix %s does not exist in memory.%n", matrixName);
+						log.warn("Tried to find the determinant of matrix {} which does not exist in memory.", matrixName);
+					}
 				}
 				case LIST -> {
 					Map<String, String> directoryListingWithNames = FileIO.listDirectoryContentsWithNames();
@@ -450,6 +487,17 @@ public class Main {
 				case SUBTRACT -> {
 					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::subtract);
 					ScreenIO.prettyPrintMatrix(result);
+				}
+				case TRACE -> {
+					String matrixName = command.args().length > 0 ? command.args()[0] : null;
+					Matrix matrix = matrices.get(matrixName);
+					if (matrix != null) {
+						double trace = matrix.trace();
+						ScreenIO.printScalarValues("trace", matrix.getName(), trace);
+					} else {
+						System.out.printf("Matrix %s does not exist in memory.%n", matrixName);
+						log.warn("Tried to find the determinant of matrix {} which does not exist in memory.", matrixName);
+					}
 				}
 				case TRANSPOSE -> {
 					Matrix result = performMatrixOperation(command.args()[0], Matrix::transpose);
