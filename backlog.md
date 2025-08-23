@@ -106,19 +106,20 @@ public static String subScriptString(int value) {
 /*
 TODO (Matrix Project — next ML-focused operations)
 
-[ ] RANK & NULLITY
+[X] RANK & NULLITY
     [X] rank(): compute from RREF (count non-zero rows)
     [X] nullity(): nCols - rank()
-    [ ] Tests: rank(null) + nullity == nCols; known dependent examples
+    [X] Tests: rank(null) + nullity == nCols; known dependent examples
 
 [ ] TRACE & NORMS
-    [ ] trace(): sum diagonal (square-only check)
-    [ ] Vector norms: L1, L2, Linf
-    [ ] Matrix norm: Frobenius (sqrt(sum of squares))
-    [ ] Tests: hand-checked small matrices/vectors
+    [X] trace(): sum diagonal (square-only check)
+    [X] Vector norms: L1, Linf
+    [ ] Vector norms: L2
+    [X] Matrix norm: Frobenius (sqrt(sum of squares))
+    [X] Tests: hand-checked small matrices/vectors
 
 [ ] ELEMENTWISE & MAP
-    [ ] hadamard(Matrix B): elementwise multiply (size check)
+    [X] hadamard(Matrix B): elementwise multiply (size check)
     [ ] map(DoubleUnaryOperator f): apply f to each entry
     [ ] Tests: compare against manual loops
 
