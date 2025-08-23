@@ -1,7 +1,7 @@
 package com.chrisdmitchell.matrix.model;
 
-import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.DoubleUnaryOperator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -437,25 +437,28 @@ public final class Matrix {
 
 		LogUtils.logMethodEntry(log);
 
-		final int rows = this.getRows();
-		final int columns = this.getColumns();
-
 		Objects.requireNonNull(addend, "Addend must not be null.");
-
 		if (this.isEmpty() || addend.isEmpty()) {
 			throw new IllegalArgumentException("Cannot add empty matrices.");
 		}
+
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+
 		if ((this.getRows() != addend.getRows()) || (this.getColumns() != addend.getColumns())) {
 			throw new IllegalArgumentException(
 				String.format("Matrix addends must be the same size: matrix %s is [%d, %d], matrix %s is [%d, %d].",
-					this.getName(), this.getRows(), this.getColumns(),
+					this.getName(), rows, columns,
 					addend.getName(), addend.getRows(), addend.getColumns()));
 		}
+
+		final double[][] left = this.getMatrix();
+		final double[][] right = addend.getMatrix();
 
 		double[][] elements = new double[rows][columns];
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < columns; j++) {
-				elements[i][j] = this.getValue(i, j) + addend.getValue(i, j);
+				elements[i][j] = left[i][j] + right[i][j];
 			}
 		}
 
@@ -480,25 +483,28 @@ public final class Matrix {
 
 		LogUtils.logMethodEntry(log);
 
-		final int rows = this.getRows();
-		final int columns = this.getColumns();
-
 		Objects.requireNonNull(subtrahend, "Subtrahend must not be null.");
-
 		if (this.isEmpty() || subtrahend.isEmpty()) {
 			throw new IllegalArgumentException("Cannot subtract empty matrices.");
 		}
+
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+
 		if ((this.getRows() != subtrahend.getRows()) || (this.getColumns() != subtrahend.getColumns())) {
 			throw new IllegalArgumentException(
 				String.format("Matrices must be the same size: matrix %s is [%d, %d], matrix %s is [%d, %d].",
-					this.getName(), this.getRows(), this.getColumns(),
+					this.getName(), rows, columns,
 					subtrahend.getName(), subtrahend.getRows(), subtrahend.getColumns()));
 		}
+
+		final double[][] left = this.getMatrix();
+		final double[][] right = subtrahend.getMatrix();
 
 		double[][] elements = new double[rows][columns];
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < columns; j++) {
-				elements[i][j] = this.getValue(i, j) - subtrahend.getValue(i, j);
+				elements[i][j] = left[i][j] - right[i][j];
 			}
 		}
 
@@ -523,31 +529,34 @@ public final class Matrix {
 	public Matrix multiply(Matrix factor) {
 
 		LogUtils.logMethodEntry(log);
-
-		final int rows = this.getRows();
-		final int columns = factor.getColumns();
-		final int shared = this.getColumns(); // == factor.getRows()
-
+		
 		Objects.requireNonNull(factor, "Factor must not be null.");
-
 		if (this.isEmpty() || factor.isEmpty()) {
 			throw new IllegalArgumentException("Cannot multiply empty matrices.");
 		}
+
+		final int leftRows = this.getRows();
+		final int leftColumns = this.getColumns();
+		final int rightRows = factor.getRows();
+		final int rightColumns = factor.getColumns();
+		
 		if (this.getColumns() != factor.getRows()) {
 			throw new IllegalArgumentException(
 				String.format("The columns of the first factor and the rows of the second factor are not equal: " +
 					"matrix %s is [%d, %d], matrix %s is [%d, %d].",
-					this.getName(), this.getRows(), this.getColumns(),
-					factor.getName(), factor.getRows(), factor.getColumns()));
+					this.getName(), leftRows, leftColumns,
+					factor.getName(), rightRows, rightColumns));
 		}
 
-		double[][] elements = new double[rows][columns];
-		for (int i = 0; i < rows; i++) {
-			for (int j = 0; j < columns; j++) {
-				double sum = 0.0;
-				for (int k = 0; k < shared; k++) {
-					sum += this.getValue(i, k) * factor.getValue(k, j);
+		final double[][] left = this.getMatrix();
+		final double[][] right = factor.getMatrix();
 
+		double[][] elements = new double[leftRows][rightColumns];
+		for (int i = 0; i < leftRows; i++) {
+			for (int j = 0; j < rightColumns; j++) {
+				double sum = 0.0;
+				for (int k = 0; k < leftColumns; k++) {
+					sum += left[i][k] * right[k][j];
 				}
 				elements[i][j] = sum;
 			}
@@ -572,18 +581,19 @@ public final class Matrix {
 	public Matrix multiply(double scalar) {
 
 		LogUtils.logMethodEntry(log);
-
-		final int rows = this.getRows();
-		final int columns = this.columns;
-
+		
 		if (this.isEmpty()) {
 			throw new IllegalArgumentException("Cannot multiply an empty matrix by a scalar.");
 		}
 
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+		final double[][] source = this.getMatrix();
+
 		double[][] elements = new double[rows][columns];
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < columns; j++) {
-				elements[i][j] = this.getValue(i, j) * scalar;
+				elements[i][j] = source[i][j] * scalar;
 			}
 		}
 
@@ -604,16 +614,18 @@ public final class Matrix {
 
 		final int rows = this.getRows();
 		final int columns = this.getColumns();
+		final double[][] source = this.getMatrix();
 
-		Matrix result = new Matrix(columns, rows, "T(" + this.getName() + ")", false);
+		double[][] result = new double[columns][rows];
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < columns; j++) {
-				result.setValue(j, i, this.getValue(i, j));
+				result[j][i] = source[i][j];
 			}
 		}
 
-		log.debug("Matrix {} transposed to {}.", this, result);
-		return result;
+		Matrix transpose = new Matrix(result, "T(" + this.getName() + ")");
+		log.debug("Matrix {} transposed to {}.", this, transpose);
+		return transpose;
 
 	}
 
@@ -652,19 +664,140 @@ public final class Matrix {
 
 		final int rows = this.getRows();
 		final int columns = this.getColumns();
+		final double[][] matrix = this.getMatrix();
 
-		Matrix cofactors = new Matrix(rows, columns, "C(" + this.getName() + ")", false);
+		double[][] cofactors = new double[rows][columns];
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < columns; j++) {
-				double cofactor = Determinants.cofactor(this.getMatrix(), i, j);
-				cofactors.setValue(i, j, cofactor);
+				cofactors[i][j] = Determinants.cofactor(matrix, i, j);
 			}
 		}
 
-		log.debug("Cofactor matrix {} calculated from matrix {}.", cofactors, this);
-		return cofactors;
+		Matrix cof = new Matrix(cofactors, "C(" + this.getName() + ")");
+		log.debug("Cofactor matrix {} calculated from matrix {}.", cof, this);
+		return cof;
 
 	}
+	
+	/**
+	 * Finds the Hadamard product between two equally sized matrices.
+	 * <p>
+	 * The Hadamard product represents an element-wise multiplication, i.e.,
+	 * c(i, j) = a(i, j) * b(i, j).
+	 * </p>
+	 * 
+	 * @param factor		the right matrix
+	 * @return				the Hadamard product
+	 */
+	public Matrix hadamard(Matrix factor) {
+
+		LogUtils.logMethodEntry(log);
+		
+		Objects.requireNonNull(factor, "Factor must not be null.");
+		if (this.isEmpty() || factor.isEmpty()) {
+			throw new IllegalArgumentException("Cannot compute Hadamard product with empty matrices.");
+		}
+
+		final int rows = factor.getRows();
+		final int columns = factor.getColumns();
+		
+		if (this.getRows() != rows || this.getColumns() != columns) {
+			throw new IllegalArgumentException(
+				String.format("The rows and columns of the factors do not match: " +
+					"matrix %s is [%d, %d], matrix %s is [%d, %d].",
+					this.getName(), this.getRows(), this.getColumns(),
+					factor.getName(), rows, columns));
+		}
+		
+		final double[][] left = this.getMatrix();
+		final double[][] right = factor.getMatrix();
+
+		double[][] elements = new double[rows][columns];
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < columns; j++) {
+				elements[i][j] = left[i][j] * right[i][j];
+			}
+		}
+
+		Matrix hadamard = new Matrix(elements, this.getName() + "∘" + factor.getName());
+		log.debug("Found the Hadamard product of matrix {} and matrix {} to get {}.", this, factor, hadamard);
+		return hadamard;
+
+	}
+	
+	/**
+	 * Finds the Kronecker product of two matrices.
+	 * <p>
+	 * The Kronecker product of an n x m and a p x q matrix fills a np x mq matrix
+	 * with the results of the second matrix times the individual elements of the
+	 * first matrix.
+	 * 
+	 * @param factor		the right matrix
+	 * @return				the Kronecker product
+	 */
+	public Matrix kronecker(Matrix factor) {
+		
+		LogUtils.logMethodEntry(log);
+
+		Objects.requireNonNull(factor, "Factor must not be null.");
+		if (this.isEmpty() || factor.isEmpty()) {
+			throw new IllegalArgumentException("Cannot compute Kronecker product with empty matrices.");
+		}
+		
+		final int sourceRows = this.getRows();
+		final int sourceColumns = this.getColumns();
+		final int destRows = factor.getRows();
+		final int destColumns = factor.getColumns();
+		final double[][] sourceFactor = this.getMatrix();
+		final double[][] destFactor = factor.getMatrix();
+		
+		double[][] elements = new double[sourceRows * destRows][sourceColumns * destColumns];
+		
+		for (int i = 0; i < sourceRows; i++) {
+			for (int j = 0; j < sourceColumns; j++) {
+				for (int k = 0; k < destRows; k++) {
+					for (int l = 0; l < destColumns; l++) {
+						elements[(i * destRows) + k][(j * destColumns) + l] = sourceFactor[i][j] * destFactor[k][l];
+					}
+				}
+			}
+		}
+		
+		Matrix kronecker = new Matrix(elements, this.getName() + "⊗" + factor.getName());
+		log.debug("Found the Kronecker product of matrix {} and matrix {} to get {}.", this, factor, kronecker);
+		return kronecker;
+		
+	}
+	
+	/**
+	 * Applies a programmer defined function to the receiver matrix.
+	 * 
+	 * @param function		a function to apply to the matrix
+	 * @return				the modified matrix
+	 */
+	public Matrix map(DoubleUnaryOperator function) {
+		
+		LogUtils.logMethodEntry(log);
+		
+		Objects.requireNonNull(function, "Function must not be null.");
+		
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+		double[][] source = this.getMatrix();
+		double[][] dest = new double[rows][columns];
+		
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < columns; j++) {
+				dest[i][j] = function.applyAsDouble(source[i][j]);
+			}
+		}
+		
+		Matrix applied = new Matrix(dest, "f(" + this.getName() + ")");
+		log.debug("Applied a programmer supplied function to matrix {}.", this.getName());
+		return applied;
+		
+	}
+	
 	
 	// -------------------------------
 	// DECOMPOSITIONS
