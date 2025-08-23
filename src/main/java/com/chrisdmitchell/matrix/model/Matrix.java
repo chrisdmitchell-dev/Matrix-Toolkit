@@ -1,5 +1,6 @@
 package com.chrisdmitchell.matrix.model;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 import org.slf4j.Logger;
@@ -752,6 +753,95 @@ public final class Matrix {
 		
 		return rref().rref();
 		
+	}
+	
+	// ----- 
+	// NORMS
+	// -----
+	
+	public double trace() {
+		
+		double trace = 0;
+		double[][] values = this.getMatrix();
+		final int rows = this.getRows();
+		
+		if (!isSquare()) {
+			throw new IllegalArgumentException("The matrix must be square.");
+		}
+		if (isEmpty()) {
+			throw new IllegalArgumentException("The matrix cannot be empty.");
+		}
+		
+		for (int i = 0; i < rows; i++) {
+			trace += values[i][i];
+		}
+		
+		return trace;
+		
+	}
+	
+	public double l1Norm() {
+		
+		double sum;
+		double max = 0.0;
+		double[][] values = this.getMatrix();
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+		
+		for (int j = 0; j < columns; j++) {
+			sum = 0;
+			for (int i = 0; i < rows; i++) {
+				sum += Math.abs(values[i][j]);
+			}
+			if (sum > max) {
+				max = sum;
+			}
+		}
+		
+		return max;
+		
+	}
+
+	public double infinityNorm() {
+		
+		double sum;
+		double max = 0.0;
+		double[][] values = this.getMatrix();
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+		
+		for (int i = 0; i < rows; i++) {
+			sum = 0;
+			for (int j = 0; j < columns; j++) {
+				sum += Math.abs(values[i][j]);
+			}
+			if (sum > max) {
+				max = sum;
+			}
+		}
+		
+		return max;
+		
+	}
+	
+	public double frobeniusNorm() {
+		
+		if (isEmpty()) {
+			throw new IllegalArgumentException("The matrix cannot be empty.");
+		}
+		
+		double sumOfSquares = 0.0;
+		double[][] values = this.getMatrix();
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < columns; j++) {
+				sumOfSquares += values[i][j] * values[i][j];
+			}
+		}
+
+		return Math.sqrt(sumOfSquares);
 	}
 
 	// --------------------------------------------------
