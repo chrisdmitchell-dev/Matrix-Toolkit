@@ -6,6 +6,8 @@ import com.chrisdmitchell.matrix.model.Matrix;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.function.DoubleUnaryOperator;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -633,6 +635,55 @@ public class MatrixTest {
 	}
 	
 	@Nested
+	@DisplayName("Matrix.rank() and Matrix.nullity()")
+	class RankTests {
+		
+		Matrix twoByTwoSequential, threeByThreeSequential;
+		int twoRank, twoNullity, threeRank, threeNullity;
+		
+		@BeforeEach
+		void setUp() {
+			
+			twoByTwoSequential = new Matrix(new double[][] {{1, 2},{3, 4}});
+			twoRank = 2;
+			twoNullity = 0;
+			threeByThreeSequential = new Matrix(new double[][] {{1, 2, 3},{4, 5, 6},{7, 8, 9}});
+			threeRank = 2;
+			threeNullity = 1;
+			
+		}
+		
+		@Test
+		@DisplayName("rank and nullity of a 2 x 2 matrix")
+		void rank2x2() {
+			
+			int rank = twoByTwoSequential.rank();
+			int nullity = twoByTwoSequential.nullity();
+			int columns = twoByTwoSequential.getColumns();
+			
+			assertEquals(twoRank, rank);
+			assertEquals(twoNullity, nullity);
+			assertEquals(rank + nullity, columns);
+			
+		}
+
+		@Test
+		@DisplayName("rank and nullity of a 3 x 3 matrix")
+		void rank3x3() {
+			
+			int rank = threeByThreeSequential.rank();
+			int nullity = threeByThreeSequential.nullity();
+			int columns = threeByThreeSequential.getColumns();
+			
+			assertEquals(threeRank, rank);
+			assertEquals(threeNullity, nullity);
+			assertEquals(rank + nullity, columns);
+			
+		}
+		
+	}
+	
+	@Nested
 	@DisplayName("Matrix.checkIndex()")
 	class IndexTests {
 		
@@ -877,4 +928,215 @@ public class MatrixTest {
 
 	}
 	
+	@Nested
+	@DisplayName("Matrix.hadamard()")
+	class HadamardTests {
+		
+		Matrix twoByTwoSequential, twoByTwoOther, twoByTwoHadamard;
+		Matrix threeByThreeSequential, threeByThreeOther, threeByThreeHadamard;
+		
+		@BeforeEach
+		void setUp() {
+			
+			twoByTwoSequential = new Matrix(new double[][] {{1, 2},{3, 4}});
+			twoByTwoOther = new Matrix(new double[][] {{5, 6},{7, 8}});
+			twoByTwoHadamard = new Matrix(new double[][] {{5, 12},{21, 32}});
+
+			threeByThreeSequential = new Matrix(new double[][] {{1, 2, 3},{4, 5, 6},{7, 8, 9}});
+			threeByThreeOther = new Matrix(new double[][] {{10, 11, 12},{13, 14, 15},{16, 17, 18}});
+			threeByThreeHadamard = new Matrix(new double[][] {{10, 22, 36},{52, 70, 90},{112, 136, 162}});
+					
+		}
+		
+		@Test
+		@DisplayName("hadamard product of two 2 x 2 matrices")
+		void hadamard2x2() {
+			
+			Matrix hadamard = twoByTwoSequential.hadamard(twoByTwoOther);
+			
+			assertMatrixEqualsExact(twoByTwoHadamard, hadamard);
+			
+		}
+		
+		@Test
+		@DisplayName("hadamard product of two 3 x 3 matrices")
+		void hadamard3x3() {
+			
+			Matrix hadamard = threeByThreeSequential.hadamard(threeByThreeOther);
+			
+			assertMatrixEqualsExact(threeByThreeHadamard, hadamard);
+
+		}
+		
+		@Test
+		@DisplayName("throws on different sizes")
+		void hadamardThrows() {
+
+			try {
+		        twoByTwoSequential.hadamard(threeByThreeSequential);
+		        fail("Expected IllegalArgumentException to be thrown");
+		    } catch (IllegalArgumentException e) {
+		        // Expected
+		    }
+			
+		}
+		
+		@Test
+		@DisplayName("checks whether the operands are changed")
+		void multiplyChanged() {
+
+			twoByTwoSequential.hadamard(twoByTwoOther);
+			
+			assertMatrixEqualsExact(new double[][] {{1, 2},{3, 4}}, twoByTwoSequential);
+		    assertMatrixEqualsExact(new double[][] {{5, 6},{7, 8}}, twoByTwoOther);
+
+		}
+		
+	}
+	
+	@Nested
+	@DisplayName("Matrix.kronecker()")
+	class KroneckerTests {
+		
+		Matrix twoByTwoSequential, twoByTwoOther, fourByFourKronecker;
+		Matrix threeByThreeSequential, sixBySixKronecker;
+		
+		@BeforeEach
+		void setUp() {
+			
+			twoByTwoSequential = new Matrix(new double[][] {{1, 2},{3, 4}});
+			twoByTwoOther = new Matrix(new double[][] {{5, 6},{7, 8}});
+			fourByFourKronecker = new Matrix(new double[][] {{5, 6, 10, 12},
+															 {7, 8, 14, 16},
+															 {15, 18, 20, 24},
+															 {21, 24, 28, 32}});
+
+			threeByThreeSequential = new Matrix(new double[][] {{1, 2, 3},{4, 5, 6},{7, 8, 9}});
+			sixBySixKronecker = new Matrix(new double[][] {{1, 2, 2, 4, 3, 6},
+														   {3, 4, 6, 8, 9, 12},
+														   {4, 8, 5, 10, 6, 12},
+														   {12, 16, 15, 20, 18, 24},
+														   {7, 14, 8, 16, 9, 18},
+														   {21, 28, 24, 32, 27, 36}});
+					
+		}
+		
+		@Test
+		@DisplayName("kronecker product of two 2 x 2 matrices")
+		void kronecker2x2() {
+			
+			Matrix kronecker = twoByTwoSequential.kronecker(twoByTwoOther);
+			
+			assertMatrixEqualsExact(fourByFourKronecker, kronecker);
+			
+		}
+		
+		@Test
+		@DisplayName("kronecker product of a 3 x 3 matrix and a 2 x 2 matrix")
+		void kronecker3x3() {
+			
+			Matrix kronecker = threeByThreeSequential.kronecker(twoByTwoSequential);
+			
+			assertMatrixEqualsExact(sixBySixKronecker, kronecker);
+
+		}
+		
+		@Test
+		@DisplayName("checks whether the operands are changed")
+		void multiplyChanged() {
+
+			twoByTwoSequential.kronecker(twoByTwoOther);
+			
+			assertMatrixEqualsExact(new double[][] {{1, 2},{3, 4}}, twoByTwoSequential);
+		    assertMatrixEqualsExact(new double[][] {{5, 6},{7, 8}}, twoByTwoOther);
+
+		}
+		
+	}
+	
+	@Nested
+	@DisplayName("Matrix.map()")
+	class MapTests {
+		
+		Matrix twoByTwoSequential, twoByTwoApplied1, twoByTwoApplied2;
+		Matrix threeByThreeSequential, threeByThreeApplied1, threeByThreeApplied2;
+		DoubleUnaryOperator function1 = (x) -> (x * x);
+		DoubleUnaryOperator function2 = (x) -> (2 * x);
+		DoubleUnaryOperator functionIdentity = (x) -> (x);
+		
+		
+		@BeforeEach
+		void setUp() {
+			
+			twoByTwoSequential = new Matrix(new double[][] {{1, 2},{3, 4}});
+			twoByTwoApplied1 = new Matrix(new double[][] {{1, 4},{9, 16}});
+			twoByTwoApplied2 = new Matrix(new double[][] {{2, 4},{6, 8}});
+
+			threeByThreeSequential = new Matrix(new double[][] {{1, 2, 3},{4, 5, 6},{7, 8, 9}});
+			threeByThreeApplied1 = new Matrix(new double[][] {{1, 4, 9},{16, 25, 36},{49, 64, 81}});
+			threeByThreeApplied2 = new Matrix(new double[][] {{2, 4, 6},{8, 10, 12},{14, 16, 18}});
+					
+		}
+		
+		@Test
+		@DisplayName("applying x * x to a 2 x 2 matrix")
+		void mapSquare2x2() {
+			
+			Matrix applied = twoByTwoSequential.map(function1);
+			
+			assertMatrixEqualsExact(twoByTwoApplied1, applied);
+			
+		}
+		
+		@Test
+		@DisplayName("applying 2 * x to a 2 x 2 matrix")
+		void mapDouble2x2() {
+			
+			Matrix applied = twoByTwoSequential.map(function2);
+			
+			assertMatrixEqualsExact(twoByTwoApplied2, applied);
+
+		}
+		
+		@Test
+		@DisplayName("applying identity function to a 2 x 2 matrix")
+		void mapIdentity2x2() {
+			
+			Matrix same = twoByTwoSequential.map(functionIdentity);
+			
+			assertMatrixEqualsExact(twoByTwoSequential, same);
+			
+		}
+		
+		@Test
+		@DisplayName("applying x * x to a 3 x 3 matrix")
+		void mapSquare3x3() {
+			
+			Matrix applied = threeByThreeSequential.map(function1);
+			
+			assertMatrixEqualsExact(threeByThreeApplied1, applied);
+			
+		}
+		
+		@Test
+		@DisplayName("applying 2 * x to a 3 x 3 matrix")
+		void mapDouble3x3() {
+			
+			Matrix applied = threeByThreeSequential.map(function2);
+			
+			assertMatrixEqualsExact(threeByThreeApplied2, applied);
+
+		}
+
+		@Test
+		@DisplayName("applying identity function to a 3 x 3 matrix")
+		void mapIdentity3x3() {
+			
+			Matrix same = threeByThreeSequential.map(functionIdentity);
+			
+			assertMatrixEqualsExact(threeByThreeSequential, same);
+			
+		}
+
+	}
 }

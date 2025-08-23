@@ -85,10 +85,11 @@ public class ScreenIO {
 	 * Prints the scalar value associated with the matrix.
 	 * <p>
 	 * The output is {@code label(MATRIX_NAME) = (SCALAR_FORMAT)}
+	 * </p>
 	 * 
-	 * @param label
-	 * @param matrixName
-	 * @param value
+	 * @param label				the label of the associated scalar value
+	 * @param matrixName		the name of the matrix
+	 * @param value				the double value to be printed
 	 */
 	public static void printScalarValues(String label, String matrixName, double value) {
 		

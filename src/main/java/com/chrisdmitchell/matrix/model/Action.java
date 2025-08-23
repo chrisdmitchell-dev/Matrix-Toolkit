@@ -30,6 +30,9 @@ public enum Action {
 		"Finds the Frobenius norm of MATRIX_NAME.",
 		"This is the square root of the sum of the squares of all elements."
 		}, new int[] { 1 }),
+	HADAMARD("hadamard MATRIX_NAME1 MATRIX_NAME2", new String[] {
+		"Finds the Hadamard product of MATRIX_NAME1 and MATRIX_NAME2."
+		}, new int[] { 2 }),
 	HELP("help [COMMAND]", new String[] {
 		"Prints help for using the given COMMAND. If no COMMAND is",
 		"specified, it prints generalized help for all commands."
@@ -45,6 +48,9 @@ public enum Action {
 	INVERSE("inverse MATRIX_NAME", new String[] {
 		"Finds the inverse of MATRIX_NAME provided that it is invertible."
 		}, new int[] { 1 }),
+	KRONECKER("kronecker MATRIX_NAME1 MATRIX_NAME2", new String[] {
+		"Find the Kronecker product of MATRIX_NAME1 and MATRIX_NAME2."
+		}, new int[] { 2 }),
 	L1("l1 MATRIX_NAME", new String[] {
 		"Finds the l1 norm of MATRIX_NAME.",
 		"This is the maximum column sum of the absolute values of",

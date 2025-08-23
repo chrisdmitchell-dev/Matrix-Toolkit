@@ -181,10 +181,12 @@ public class ConsoleUI {
 			case "determinant", "det" -> validate(Action.DETERMINANT, trimmedArgs, Action.DETERMINANT.getNumberOfArguments());
 			case "exit", "quit", "q" -> validate(Action.EXIT, trimmedArgs, Action.EXIT.getNumberOfArguments());
 			case "frobenius" -> validate(Action.FROBENIUS, trimmedArgs, Action.FROBENIUS.getNumberOfArguments());
+			case "hadamard" -> validate(Action.HADAMARD, trimmedArgs, Action.HADAMARD.getNumberOfArguments());
 			case "help", "h", "?" -> validate(Action.HELP, trimmedArgs, Action.HELP.getNumberOfArguments());
 			case "infinity" -> validate(Action.INFINITY, trimmedArgs, Action.INFINITY.getNumberOfArguments());
 			case "input" -> validate(Action.INPUT, trimmedArgs, Action.INPUT.getNumberOfArguments());
 			case "inverse" -> validate(Action.INVERSE, trimmedArgs, Action.INVERSE.getNumberOfArguments());
+			case "kronecker" -> validate(Action.KRONECKER, trimmedArgs, Action.KRONECKER.getNumberOfArguments());
 			case "l1" -> validate(Action.L1, trimmedArgs, Action.L1.getNumberOfArguments());
 			case "list" -> validate(Action.LIST, trimmedArgs, Action.LIST.getNumberOfArguments());
 			case "load" -> {
