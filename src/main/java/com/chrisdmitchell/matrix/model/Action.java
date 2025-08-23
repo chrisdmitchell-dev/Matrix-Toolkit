@@ -26,22 +26,33 @@ public enum Action {
 		"Exits the program.",
 		"You can enter 'exit,' 'quit,' or just 'q.'"
 		}, new int[] { 0 }),
+	FROBENIUS("frobenius MATRIX_NAME", new String[] {
+		"Finds the Frobenius norm of MATRIX_NAME.",
+		"This is the square root of the sum of the squares of all elements."
+		}, new int[] { 1 }),
 	HELP("help [COMMAND]", new String[] {
 		"Prints help for using the given COMMAND. If no COMMAND is",
 		"specified, it prints generalized help for all commands."
 		}, new int[] { 0, 1 } ),
+	INFINITY("infinity MATRIX_NAME", new String[] {
+		"Finds the infinity norm of MATRIX_NAME.",
+		"This is the maximum row sum of the absolute values of",
+		"the elements."
+		}, new int[] { 1 }),
 	INPUT("input MATRIX_NAME", new String[] {
 		"Use the keyboard to input a new matrix called MATRIX_NAME."
 		}, new int[] { 1 }),
 	INVERSE("inverse MATRIX_NAME", new String[] {
 		"Finds the inverse of MATRIX_NAME provided that it is invertible."
 		}, new int[] { 1 }),
+	L1("l1 MATRIX_NAME", new String[] {
+		"Finds the l1 norm of MATRIX_NAME.",
+		"This is the maximum column sum of the absolute values of",
+		"the elements."
+		}, new int[] { 1 }),
 	LIST("list", new String[] {
 		"Get a list of files containing matrices."
 		}, new int[] { 0 }),
-	MULTIPLY("multiply MATRIX_NAME1 (MATRIX_NAME2|SCALAR)", new String[] {
-		"Multiplies MATRIX_NAME1 by either the MATRIX_NAME2 or SCALAR."
-		}, new int[] { 2 }),
 	LOAD("load MATRIX_NAME [from FILENAME]", new String[] {
 		"Loads the matrix stored in FILENAME into matrix MATRIX_NAME.",
 		"This file must have been generated using the 'save' command.",
@@ -49,6 +60,9 @@ public enum Action {
 		"If no FILENAME is specified, the MATRIX_NAME will be used",
 		"as a FILENAME."
 		}, new int[] { 1, 2 }),
+	MULTIPLY("multiply MATRIX_NAME1 (MATRIX_NAME2|SCALAR)", new String[] {
+		"Multiplies MATRIX_NAME1 by either the MATRIX_NAME2 or SCALAR."
+		}, new int[] { 2 }),
 	PRINT("print [MATRIX_NAME]", new String[] {
 		"Prints the value of MATRIX_NAME.",
 		"If MATRIX_NAME is not given, the program will print a list",
@@ -75,6 +89,9 @@ public enum Action {
 	SUBTRACT("subtract MATRIX_NAME1 MATRIX_NAME2", new String[] {
 		"Subtracts MATRIX_NAME2 from MATRIX_NAME1 and returns the difference."
 		}, new int[] { 2 }),
+	TRACE("trace MATRIX_NAME", new String[] {
+		"Finds the trace of MATRIX_NAME."
+		}, new int[] { 1 }),
 	TRANSPOSE("transpose MATRIX_NAME", new String[] {
 		"Finds the transpose of MATRIX_NAME."
 		}, new int[] { 1 });

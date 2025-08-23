@@ -107,8 +107,8 @@ public static String subScriptString(int value) {
 TODO (Matrix Project — next ML-focused operations)
 
 [ ] RANK & NULLITY
-    [ ] rank(): compute from RREF (count non-zero rows)
-    [ ] nullity(): nCols - rank()
+    [X] rank(): compute from RREF (count non-zero rows)
+    [X] nullity(): nCols - rank()
     [ ] Tests: rank(null) + nullity == nCols; known dependent examples
 
 [ ] TRACE & NORMS
