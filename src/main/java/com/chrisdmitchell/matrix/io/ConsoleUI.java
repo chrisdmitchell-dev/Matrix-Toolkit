@@ -180,9 +180,12 @@ public class ConsoleUI {
 			case "cofactors" -> validate(Action.COFACTORS, trimmedArgs, Action.COFACTORS.getNumberOfArguments());
 			case "determinant", "det" -> validate(Action.DETERMINANT, trimmedArgs, Action.DETERMINANT.getNumberOfArguments());
 			case "exit", "quit", "q" -> validate(Action.EXIT, trimmedArgs, Action.EXIT.getNumberOfArguments());
-			case "input" -> validate(Action.INPUT, trimmedArgs, Action.INPUT.getNumberOfArguments());
+			case "frobenius" -> validate(Action.FROBENIUS, trimmedArgs, Action.FROBENIUS.getNumberOfArguments());
 			case "help", "h", "?" -> validate(Action.HELP, trimmedArgs, Action.HELP.getNumberOfArguments());
+			case "infinity" -> validate(Action.INFINITY, trimmedArgs, Action.INFINITY.getNumberOfArguments());
+			case "input" -> validate(Action.INPUT, trimmedArgs, Action.INPUT.getNumberOfArguments());
 			case "inverse" -> validate(Action.INVERSE, trimmedArgs, Action.INVERSE.getNumberOfArguments());
+			case "l1" -> validate(Action.L1, trimmedArgs, Action.L1.getNumberOfArguments());
 			case "list" -> validate(Action.LIST, trimmedArgs, Action.LIST.getNumberOfArguments());
 			case "load" -> {
 				String[] newArgs = normalizeLoadAndSaveInput(trimmedArgs, "from");
@@ -218,6 +221,7 @@ public class ConsoleUI {
 				yield validate(Action.SET, newArgs, Action.SET.getNumberOfArguments());
 			}
 			case "subtract" -> validate(Action.SUBTRACT, trimmedArgs, Action.SUBTRACT.getNumberOfArguments());
+			case "trace" -> validate(Action.TRACE, trimmedArgs, Action.TRACE.getNumberOfArguments());
 			case "transpose" -> validate(Action.TRANSPOSE, trimmedArgs, Action.TRANSPOSE.getNumberOfArguments());
 			default -> new Command(null, null);
 		};
