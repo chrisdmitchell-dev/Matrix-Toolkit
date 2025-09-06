@@ -22,7 +22,7 @@ public final class ReducedForm {
 	 *
 	 * @param		the matrix from which to calculate the ref
 	 * @return		the REF of the matrix
-	 * @implNote	Algorithm and refinements provided by ChatGPT (OpenAI)
+	 * @implNote	Algorithm and refinements provided by ChatGPT (OpenAI).
 	 */
 	public static double[][] calculateREF(double[][] matrix) {
 
@@ -85,7 +85,7 @@ public final class ReducedForm {
 	 * and returns the RREF as a new {@code double[][]}.
 	 *
 	 * @return		the RREF of the matrix
-	 * @implNote	Algorithm and refinements provided by ChatGPT (OpenAI)
+	 * @implNote	Algorithm and refinements provided by ChatGPT (OpenAI).
 	 */
 	public static double[][] calculateRREF(double[][] matrix) {
 

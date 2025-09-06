@@ -100,4 +100,14 @@ public class ScreenIO {
 		log.info("Printed {}({}) = {}.", label, matrixName, SCALAR_FORMAT.format(value));
 		
 	}
+	
+	public static void printLU(Matrix matrix, Matrix l, Matrix u, Matrix permutations) {
+		
+		LogUtils.logMethodEntry(log);
+		
+		final int rows = matrix.getRows();
+		final int columns = matrix.getColumns();
+		
+		
+	}
 }

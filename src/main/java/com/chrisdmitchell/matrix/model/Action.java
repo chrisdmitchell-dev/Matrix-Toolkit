@@ -66,6 +66,10 @@ public enum Action {
 		"If no FILENAME is specified, the MATRIX_NAME will be used",
 		"as a FILENAME."
 		}, new int[] { 1, 2 }),
+	LU("lu MATRIX_NAME", new String[] {
+		"Calculates the LU decomposition and permutation matrix",
+		"for MATRIX_NAME."
+		}, new int[] { 1 }),
 	MULTIPLY("multiply MATRIX_NAME1 (MATRIX_NAME2|SCALAR)", new String[] {
 		"Multiplies MATRIX_NAME1 by either the MATRIX_NAME2 or SCALAR."
 		}, new int[] { 2 }),

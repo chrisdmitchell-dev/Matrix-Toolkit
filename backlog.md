@@ -118,10 +118,10 @@ TODO (Matrix Project — next ML-focused operations)
     [X] Matrix norm: Frobenius (sqrt(sum of squares))
     [X] Tests: hand-checked small matrices/vectors
 
-[ ] ELEMENTWISE & MAP
+[X] ELEMENTWISE & MAP
     [X] hadamard(Matrix B): elementwise multiply (size check)
-    [ ] map(DoubleUnaryOperator f): apply f to each entry
-    [ ] Tests: compare against manual loops
+    [X] map(DoubleUnaryOperator f): apply f to each entry
+    [X] Tests: compare against manual loops
 
 [ ] TRIANGULAR SOLVES
     [ ] forwardSub(L, b): L lower-triangular with nonzero diag

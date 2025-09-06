@@ -197,6 +197,7 @@ public class ConsoleUI {
 				}
 				yield validate(Action.LOAD, newArgs, Action.LOAD.getNumberOfArguments());
 			}
+			case "lu" -> validate(Action.LU, trimmedArgs, Action.LU.getNumberOfArguments());
 			case "multiply" -> validate(Action.MULTIPLY, trimmedArgs, Action.MULTIPLY.getNumberOfArguments());
 			case "print" -> validate(Action.PRINT, trimmedArgs, Action.PRINT.getNumberOfArguments());
 			case "ref" -> validate(Action.REF, trimmedArgs, Action.REF.getNumberOfArguments());

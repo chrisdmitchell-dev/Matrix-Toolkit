@@ -382,6 +382,19 @@ public class Main {
 						}
 					}
 				}
+				case LU -> {
+					String matrixName = command.args().length > 0 ? command.args()[0] : null;
+					Matrix matrix = matrices.get(matrixName);
+					if (matrix != null) {
+						Matrix l = matrix.lowerTriangular();
+						Matrix u = matrix.upperTriangular();
+						Matrix permutations = matrix.luPermutations();
+						ScreenIO.printLU(matrix, l, u, permutations);
+					} else {
+						System.out.printf("Matrix %s does not exist in memory.%n", matrixName);
+						log.warn("Tried to find the determinant of matrix {} which does not exist in memory.", matrixName);
+					}
+				}
 				case MULTIPLY -> {
 					if (matrices.get(command.args()[1]) == null) {
 						Matrix source = matrices.get(command.args()[0]);

@@ -1137,6 +1137,48 @@ public class MatrixTest {
 			assertMatrixEqualsExact(threeByThreeSequential, same);
 			
 		}
-
+	}
+	
+	@Nested
+	@DisplayName("Matrix.lu()")
+	class LUTests {
+	
+		Matrix threeByThreeSequential, threeByThreeLUPacked;
+		Matrix fourByFourSequential, fourByFourLUPacked;
+		
+		@BeforeEach
+		void setUp() {
+			
+			threeByThreeSequential = new Matrix(new double[][] {{1, 2, -3},{4, 5, 6},{7, 8, 9}});
+			threeByThreeLUPacked = new Matrix(new double[][] {{7, 8, 9},
+															  {0.1428571429, 0.8571428571, -4.2857142857},
+															  {0.5714285714, 0.5, 3}});
+			fourByFourSequential = new Matrix(new double[][] {{1, 2, 3, -4},{5, 6, -7, 8},{9, 10, 11, 12},{13, 14, 15, 16}});
+			fourByFourLUPacked = new Matrix(new double[][] {{13, 14, 15, 16},
+															{0.0769230769, 0.9230769231, 1.8461538462, -5.2307692308},
+															{0.3846153846, 0.6666666667, -14, 5.3333333333},
+															{0.6923076923, 0.3333333333, 0, 2.6666666667}});
+			
+		}
+		
+		@Test
+		@DisplayName("lu decomposition of a 3 x 3 matrix")
+		void lu3x3() {
+			
+			Matrix luPacked = threeByThreeSequential.lu();
+			
+			assertMatrixEqualsApprox(threeByThreeLUPacked, luPacked);
+			
+		}
+		
+		@Test
+		@DisplayName("lu decomposition of a 4 x 4 matrix")
+		void lu4x4() {
+			
+			Matrix luPacked = fourByFourSequential.lu();
+			
+			assertMatrixEqualsApprox(fourByFourLUPacked, luPacked);
+			
+		}
 	}
 }
