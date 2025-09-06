@@ -246,19 +246,10 @@ public class Main {
 				}
 				case CLEAR -> {
 				    String matrixName = command.args().length > 0 ? command.args()[0] : null;
-				    Matrix matrix = matrices.get(matrixName);
-				    if (matrix != null) {
-						if (matrix.isReadOnly()) {
-							if (ConsoleUI.getYorN("Matrix " + matrix.getName() + " is marked as read only. Clear", "n")) {
-								matrices.remove(matrix.getName());
-								System.out.printf("Cleared matrix %s from memory.%n", matrixName);
-								log.info("Cleared matrix {} from memory.", matrixName);
-							} else {
-								continue;
-							}
-						} else {
-							matrices.remove(matrix.getName());
-						}
+					if (matrices.containsKey(matrixName)) {
+						matrices.remove(matrixName);
+						System.out.printf("Cleared matrix %s from memory.%n", matrixName);
+						log.info("Cleared matrix {} from memory.", matrixName);
 					} else {
 						System.out.printf("Matrix %s does not exist in memory.%n", matrixName);
 						log.warn("Tried to clear matrix {} from memory which does not exist.", matrixName);
@@ -384,7 +375,6 @@ public class Main {
 					} else {
 						Matrix matrix = FileIO.loadMatrix(filename);
 						if (matrix != null) {
-							matrix.setSavedToDisk(true);
 							matrices.put(matrix.getName(), matrix);
 							System.out.printf("Loaded matrix %s from %s.%n", matrix.getName(), filename);
 						} else {
@@ -399,15 +389,7 @@ public class Main {
 						Matrix l = matrix.lowerTriangular();
 						Matrix u = matrix.upperTriangular();
 						Matrix permutations = matrix.luPermutations();
-						if (ScreenIO.printLUandSave(matrix, l, u, permutations)) {
-							l.setReadOnly(true);
-							matrices.put(l.getName(), l);
-							u.setReadOnly(true);
-							matrices.put(u.getName(), u);
-							permutations.setReadOnly(true);
-							matrices.put(permutations.getName(), permutations);
-							System.out.println("Saved.");
-						}
+						ScreenIO.printLU(matrix, l, u, permutations);
 					} else {
 						System.out.printf("Matrix %s does not exist in memory.%n", matrixName);
 						log.warn("Tried to find the determinant of matrix {} which does not exist in memory.", matrixName);
@@ -461,7 +443,6 @@ public class Main {
 					if (!matrices.isEmpty()) {
 						if (matrices.containsKey(matrixName)) {
 							if (FileIO.saveMatrix(matrices.get(matrixName), filename)) {
-								matrices.get(matrixName).setSavedToDisk(true);
 								System.out.printf("Matrix %s saved to file %s successfully.%n", matrixName, filename);
 							} else {
 								log.error("Error trying to save matrix {} to file {}.", matrixName, filename);

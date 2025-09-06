@@ -101,18 +101,13 @@ public class ScreenIO {
 		
 	}
 	
-	public static boolean printLUandSave(Matrix matrix, Matrix l, Matrix u, Matrix permutations) {
+	public static void printLU(Matrix matrix, Matrix l, Matrix u, Matrix permutations) {
 		
 		LogUtils.logMethodEntry(log);
-
-		System.out.println("Perm(A) * A = L(A) * U(A)");
-		System.out.println("Where:");
-		System.out.println(permutations);
-		System.out.println(matrix);
-		System.out.println(l);
-		System.out.println(u);
 		
-		return ConsoleUI.getYorN("Would you like to save these results to memory", "y");
+		final int rows = matrix.getRows();
+		final int columns = matrix.getColumns();
+		
 		
 	}
 }

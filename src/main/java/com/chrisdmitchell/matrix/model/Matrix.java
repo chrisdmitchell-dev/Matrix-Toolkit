@@ -60,11 +60,8 @@ public final class Matrix {
 
 	private int rows, columns;
 	private String name;
-	private boolean readonly;
-	
-	@JsonIgnore
-	private boolean savedToDisk;
-	
+	private boolean savedToDisk, readonly;
+
 	/**
 	 * Set to {@code @JsonIgnore} so that Jackson uses {@code getMatrix()} and {@code setMatrix()}
 	 * to get/set the {@code double[][] matrix}.
@@ -80,7 +77,7 @@ public final class Matrix {
 	
 	private static record REFCachedResult(Matrix ref, int rank, int version) {}
 	private static record RREFCachedResult(Matrix rref, int rank, int version) {}
-	private static record LUCachedResult(Matrix luPacked, Matrix l, Matrix u, Matrix permutations, Double determinant, int parity, int version) {}
+	private static record LUCachedResult(Matrix luPacked, Matrix l, Matrix u, Matrix permutations, double determinant, int parity, int version) {}
 	private static record QRCachedResult(Matrix q, Matrix r, int version) {}
 	
 	private static final class CachedResults {
