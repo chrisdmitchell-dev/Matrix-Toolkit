@@ -1,5 +1,6 @@
 package com.chrisdmitchell.matrix.model;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
 
@@ -9,7 +10,9 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import com.chrisdmitchell.matrix.algo.decompose.Decompose;
 import com.chrisdmitchell.matrix.algo.reducedform.ReducedForm;
+import com.chrisdmitchell.matrix.model.LUPDecompositionResults;
 import com.chrisdmitchell.matrix.util.Determinants;
 import com.chrisdmitchell.matrix.util.LogUtils;
 import com.chrisdmitchell.matrix.util.MatrixUtils;
@@ -57,8 +60,11 @@ public final class Matrix {
 
 	private int rows, columns;
 	private String name;
-	private boolean savedToDisk, readonly;
-
+	private boolean readonly;
+	
+	@JsonIgnore
+	private boolean savedToDisk;
+	
 	/**
 	 * Set to {@code @JsonIgnore} so that Jackson uses {@code getMatrix()} and {@code setMatrix()}
 	 * to get/set the {@code double[][] matrix}.
@@ -72,16 +78,16 @@ public final class Matrix {
 	@JsonIgnore
 	private int modCount = 0;
 	
-	private static record REFResult(Matrix ref, int rank, int version) {}
-	private static record RREFResult(Matrix rref, int rank, int version) {}
-	private static record LUResult(Matrix L, Matrix U, int[] pivots, int sign, double determinant, int version) {}
-	private static record QRResult(Matrix Q, Matrix R, int version) {}
+	private static record REFCachedResult(Matrix ref, int rank, int version) {}
+	private static record RREFCachedResult(Matrix rref, int rank, int version) {}
+	private static record LUCachedResult(Matrix luPacked, Matrix l, Matrix u, Matrix permutations, Double determinant, int parity, int version) {}
+	private static record QRCachedResult(Matrix q, Matrix r, int version) {}
 	
 	private static final class CachedResults {
-		REFResult ref = null;
-		RREFResult rref = null;
-		LUResult lu = null;
-		QRResult qr = null;
+		REFCachedResult ref = null;
+		RREFCachedResult rref = null;
+		LUCachedResult lu = null;
+		QRCachedResult qr = null;
 	}
 	
 	private static final Logger log = LoggerFactory.getLogger(Matrix.class);
@@ -370,7 +376,7 @@ public final class Matrix {
 	/**
 	 * Returns the nullity of the given matrix as matrix rank subtracted from the number of columns.
 	 * 
-	 * @return
+	 * @return		the nullity as an integer
 	 */
 	public int nullity() {
 
@@ -415,6 +421,36 @@ public final class Matrix {
 		Matrix minorMatrix = new Matrix(Determinants.minorMatrix(this.getMatrix(), row, column), "MINOR");
 		
 		return minorMatrix;
+	}
+	
+	/**
+	 * Calculates the density of the matrix as the number of non-zero entries divided by the total
+	 * number of entries.
+	 * <p>
+	 * This calculation involves calling {@code MatrixUtils.safeScale()} and {@code MatrixUtils.nearlyZero()}.
+	 * </p>
+	 * 
+	 * @return			the density of the matrix
+	 */
+	public double density() {
+		
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+		final double[][] matrix = this.getMatrix();
+		final double scale = MatrixUtils.safeScale(matrix);
+		
+		int nonZeroEntries = 0;
+		
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < rows; j++) {
+				if (!MatrixUtils.nearlyZero(matrix[i][j], scale)) {
+					nonZeroEntries++;
+				}
+			}
+		}
+		
+		return (double) nonZeroEntries / (rows * columns);
+		
 	}
 
 	// -------------------------------------------------
@@ -645,7 +681,7 @@ public final class Matrix {
 			throw new IllegalArgumentException("The matrix is not square.");
 		}
 
-		Matrix inverse = this.cofactors().transpose().multiply(1 / this.determinant());
+		Matrix inverse = this.adjugate().multiply(1 / this.determinant());
 		inverse.setName("I(" + this.getName() + ")");
 
 		log.debug("Matrix {} inverted to {}.", this, inverse);
@@ -654,7 +690,7 @@ public final class Matrix {
 	}
 	
 	/**
-	 * Calculates the matrix of cofactors for the matrix parameter.
+	 * Calculates the matrix of cofactors for the receiver matrix.
 	 *
 	 * @return		the matrix of cofactors
 	 */
@@ -677,6 +713,22 @@ public final class Matrix {
 		log.debug("Cofactor matrix {} calculated from matrix {}.", cof, this);
 		return cof;
 
+	}
+	
+	/**
+	 * Calculates the adjugate matrix for the receiver matrix.
+	 * 
+	 * @return		the adjugate matrix
+	 */
+	public Matrix adjugate() {
+		
+		LogUtils.logMethodEntry(log);
+
+		Matrix adjugate = cofactors().transpose();
+		adjugate.setName("ADJ(" + this.getName() + ")");
+		log.debug("Adjugate matrix {} calculated from matrix {}.", adjugate, this);
+		return adjugate;
+		
 	}
 	
 	/**
@@ -798,6 +850,41 @@ public final class Matrix {
 		
 	}
 	
+	/**
+	 * Applies a row permutation to this matrix and returns the permuted copy.
+	 * <p>
+	 * This is equivalent to left-multiplying by a permutation matrix P defined by {@code pivot}:
+	 * {@code result = P * this}. Each entry {@code pivot[i]} gives the source row in the
+	 * original matrix that will become row {@code i} in the result.
+	 * </p>
+	 *  
+	 * @param pivot			an array of ints which describe the row order, e.g., {@code [2, 3, 1, 5, 4]}
+	 * @return				a new matrix containing the permutation
+	 */
+	public Matrix applyPermutation(int[] pivot) {
+		
+		LogUtils.logMethodEntry(log);
+		
+		Objects.requireNonNull(pivot, "Pivot must not be null");
+		
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+		if (pivot.length != rows) {
+			throw new IllegalArgumentException("Pivot length " + pivot.length + " != row count " + rows + ".");
+		}
+		
+		final double[][] source = this.getMatrix();
+		double[][] pivotedMatrix = new double[rows][columns];
+		for (int i = 0; i < rows; i++) {
+			int sourceRow = pivot[i];
+			System.arraycopy(source[sourceRow], 0, pivotedMatrix[i], 0, columns);
+		}
+		
+		Matrix pivotedMatrixObject = new Matrix(pivotedMatrix, "P(" + this.getName() + ")");
+		pivotedMatrixObject.setReadOnly(true);
+		log.debug("Applied pivot vector {} to matrix {} to get {}.", Arrays.toString(pivot), this, pivotedMatrixObject);
+		return pivotedMatrixObject;
+	}
 	
 	// -------------------------------
 	// DECOMPOSITIONS
@@ -805,12 +892,14 @@ public final class Matrix {
 	// -------------------------------
 
 	/**
-	 * Calculates the row echelon form (REF) of the receiver Matrix and returns
-	 * the REF as a new Matrix object.
+	 * Calculates the row echelon form (REF) of the receiver matrix and caches the result.
+	 * <p>
+	 * A cached result record is then returned.
+	 * </p>
 	 *
-	 * @return		the REFResult containing the matrix
+	 * @return		the REFCachedResult containing the REF matrix
 	 */
-	public REFResult ref() {
+	public REFCachedResult ref() {
 		
 		LogUtils.logMethodEntry(log);
 		
@@ -825,7 +914,7 @@ public final class Matrix {
 		
 		Matrix refMatrix = new Matrix(ref, "REF(" + this.getName() + ")");
 		refMatrix.setReadOnly(true);
-		cache.ref = new REFResult(refMatrix, rank, modCount);
+		cache.ref = new REFCachedResult(refMatrix, rank, modCount);
 
 		log.debug("Calculated REF matrix {} from {}.", refMatrix, this);
 		return cache.ref;
@@ -847,12 +936,14 @@ public final class Matrix {
 	}
 
 	/**
-	 * Calculates the reduced row echelon form (RREF) of the receiver Matrix and returns
-	 * the RREF as a new Matrix object.
+	 * Calculates the reduced row echelon form (RREF) of the receiver matrix and caches the result.
+	 * <p>
+	 * A cached result record is then returned.
+	 * </p>
 	 *
-	 * @return		the RREFResult containing the matrix
+	 * @return		the RREFCachedResult containing the RREF matrix
 	 */
-	public RREFResult rref() {
+	public RREFCachedResult rref() {
 
 		LogUtils.logMethodEntry(log);
 
@@ -867,7 +958,7 @@ public final class Matrix {
 	    
 		Matrix rrefMatrix = new Matrix(rref, "RREF(" + this.getName() + ")");
 		rrefMatrix.setReadOnly(true);
-		cache.rref = new RREFResult(rrefMatrix, rank, modCount);
+		cache.rref = new RREFCachedResult(rrefMatrix, rank, modCount);
 
 		log.debug("Calculated RREF matrix {} from {}.", rrefMatrix, this);
 		return cache.rref;
@@ -885,6 +976,102 @@ public final class Matrix {
 	public Matrix reducedRowEchelonForm() {
 		
 		return rref().rref();
+		
+	}
+	
+	/**
+	 * Decomposes the receiver matrix into a packed LU matrix and a permutations array and caches
+	 * the result.
+	 * <p>
+	 * A cached result record is then returned.
+	 * </p>
+	 * 
+	 * @return			the LUCachedResult containing the packed LU matrix
+	 */
+	public LUCachedResult luDecomposition() {
+		
+		LogUtils.logMethodEntry(log);
+		
+		final String name = this.getName();
+
+	    if (cache.lu != null && cache.lu.version == modCount) {
+	    	log.debug("Returned cached value of LU matrix {}.", cache.lu.luPacked());
+	        return cache.lu;
+	    }
+	    
+	    double[][] matrixValues = this.getMatrix();
+	    LUPDecompositionResults luresults = Decompose.decompose(matrixValues);
+	    
+	    Matrix luPacked = new Matrix(luresults.luPacked(), "LU(" + name + ")");
+	    luPacked.setReadOnly(true);
+	    Matrix l = new Matrix(luresults.l(), "L(" + name + ")");
+	    l.setReadOnly(true);
+	    Matrix u = new Matrix(luresults.u(), "U(" + name + ")");
+	    u.setReadOnly(true);
+	    Matrix permutations = new Matrix(luresults.permutations(), "Perm(" + name + ")");
+	    permutations.setReadOnly(true);
+	    
+	    cache.lu = new LUCachedResult(luPacked, l, u, permutations, luresults.determinant(), luresults.parity(), modCount);
+	    
+	    log.debug("Calculated LU matrix {} with permutations {} and parity {} from {}.",
+	    		  luPacked, Arrays.toString(luresults.pivot()), luresults.parity(), this);
+	    return cache.lu;
+	    
+	}
+	
+	/**
+	 * Access the packed LU Matrix contained within the cached LU results.
+	 * <p>
+	 * Returns an immutable, cached view; recomputed only when the source matrix mutates.
+	 * </p>
+	 * 
+	 * @return			the cached packed LU matrix
+	 */
+	public Matrix lu() {
+		
+		return luDecomposition().luPacked;
+		
+	}
+	
+	/**
+	 * Access the lower triangular matrix contained within the cached LU results.
+	 * <p>
+	 * Returns an immutable, cached view; recomputed only when the source matrix mutates.
+	 * </p>
+	 * 
+	 * @return			the cached lower triangular matrix found with lu decomposition
+	 */
+	public Matrix lowerTriangular() {
+		
+		return luDecomposition().l;
+		
+	}
+	
+	/**
+	 * Access the upper triangular matrix contained within the cached LU results.
+	 * <p>
+	 * Returns an immutable, cached view; recomputed only when the source matrix mutates.
+	 * </p>
+	 * 
+	 * @return			the cached upper triangular matrix found with lu decomposition
+	 */
+	public Matrix upperTriangular() {
+		
+		return luDecomposition().u;
+		
+	}
+	
+	/**
+	 * Access the permutations matrix contained within the cached LU results.
+	 * <p>
+	 * Returns an immutable, cached view; recomputed only when the source matrix mutates.
+	 * </p>
+	 * 
+	 * @return			the cached permutations matrix found with lu decomposition
+	 */
+	public Matrix luPermutations() {
+		
+		return luDecomposition().permutations;
 		
 	}
 	

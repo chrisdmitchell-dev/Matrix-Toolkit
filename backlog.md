@@ -41,8 +41,11 @@ public static String subScriptString(int value) {
 }
 ```
 
-- [ ] Add constants to allow for the setting of short/pretty print and exactEquals/approxEquals/equals
+- [ ] When exiting, check whether all matrices in memory have been saved to disk.
+      Verify if you want to exit without saving everything.
 
+- [ ] Add an option to save all matrices in memory to disk. Have one file be able
+      to contain multiple matrices.
 
 /* TODO (Matrix cleanup + maintainability roadmap)
  * 
@@ -118,10 +121,10 @@ TODO (Matrix Project — next ML-focused operations)
     [X] Matrix norm: Frobenius (sqrt(sum of squares))
     [X] Tests: hand-checked small matrices/vectors
 
-[ ] ELEMENTWISE & MAP
+[X] ELEMENTWISE & MAP
     [X] hadamard(Matrix B): elementwise multiply (size check)
-    [ ] map(DoubleUnaryOperator f): apply f to each entry
-    [ ] Tests: compare against manual loops
+    [X] map(DoubleUnaryOperator f): apply f to each entry
+    [X] Tests: compare against manual loops
 
 [ ] TRIANGULAR SOLVES
     [ ] forwardSub(L, b): L lower-triangular with nonzero diag
