@@ -22,8 +22,9 @@ public class Constants {
 		private Formatting() {};
 		
 		public static final int PRECISION = 3;
+		public static final int SCALAR_PRECISION = 9;
 		public static final DecimalFormat MATRIX_FORMAT = new DecimalFormat("0." + "0".repeat(PRECISION));
-		public static final DecimalFormat SCALAR_FORMAT = new DecimalFormat("0." + "#".repeat(10));
+		public static final DecimalFormat SCALAR_FORMAT = new DecimalFormat("0." + "#".repeat(SCALAR_PRECISION));
 		public static final Locale LOCALE = Locale.ROOT;
 
 	}
