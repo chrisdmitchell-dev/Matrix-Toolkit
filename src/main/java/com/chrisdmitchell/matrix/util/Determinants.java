@@ -120,7 +120,7 @@ public final class Determinants {
 	    }
 
 	    log.debug("Minor matrix {} calculated from {} at [{}, {}]",
-	    		  Arrays.toString(minorMatrix), Arrays.toString(source), row, column);
+	    		  Arrays.deepToString(minorMatrix), Arrays.deepToString(source), row, column);
 	    return minorMatrix;
 
 	}

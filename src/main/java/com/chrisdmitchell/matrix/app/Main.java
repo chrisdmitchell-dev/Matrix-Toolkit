@@ -82,42 +82,84 @@ import com.chrisdmitchell.matrix.util.LogUtils;
  */
 
 /*
-TODO (Daily Git Workflow for this project)
-
-1. Update your local main branch
-   git checkout main
-   git pull origin main
-
-2. Create a new branch for your work
-   git checkout -b feature/<short-description>
-   // Example: git checkout -b feature/matrix-multiply
-
-3. Do your coding
-   // Edit files, add methods, run tests
-
-4. Stage and commit changes
-   git status               // see changes
-   git add .                // stage all changed files
-   git commit -m "Implement <feature>"
-
-5. Push your branch to GitHub
-   git push -u origin feature/<short-description>
-
-6. Open a Pull Request on GitHub
-   // Compare & pull request → write description → merge into main
-
-7. Clean up after merge
-   git checkout main
-   git pull origin main
-   git branch -d feature/<short-description>
-   git push origin --delete feature/<short-description>
-
-Notes:
-- Keep commits small and messages meaningful.
-- Never code directly on main — always use a branch.
-- Use git status often to see what’s going on.
-- Run git pull before starting new work to stay in sync.
-*/
+ * GIT DAILY WORKFLOW (Windows + single repo; safe, clean history)
+ * ---------------------------------------------------------------
+ * One-time setup (recommended):
+ *   # Pull fast-forward only (avoid accidental merge commits)
+ *   git config --global pull.ff only
+ *   # Treat filename case changes as real changes (helps with BACKLOG.md vs backlog.md)
+ *   git config core.ignorecase false
+ *
+ * Daily loop:
+ *   1) Update master to latest
+ *      git switch master
+ *      git pull                 // fast-forward only due to config
+ *
+ *   2) Start a new feature branch
+ *      git switch -c my-feature
+ *
+ *   3) Do work, commit, publish
+ *      git add -A
+ *      git commit -m "Clear, specific message"
+ *      git push -u origin my-feature   // sets tracking; later just `git push`
+ *
+ *   4) Open PR on GitHub
+ *      base: master    ←    compare: my-feature
+ *
+ *   5) After PR is merged
+ *      git switch master
+ *      git pull
+ *      git branch -d my-feature
+ *      git push origin --delete my-feature   // optional, cleans up remote
+ *
+ * Common fixes & tips:
+ *   • Local master diverged; make it exactly match GitHub:
+ *       git fetch origin
+ *       git reset --hard origin/master
+ *
+ *   • Untracked file blocks switch/pull (e.g., case-change collisions):
+ *       // Save if needed, then remove the untracked file and retry
+ *       del BACKLOG.md
+ *       git switch master   // or: git pull
+ *       // Alternative (DANGEROUS: removes ALL untracked files/dirs):
+ *       // git clean -fd
+ *
+ *   • Case-only rename on Windows/macOS (reliable two-step):
+ *       git mv backlog.md backlog_tmp.md
+ *       git commit -m "Temp rename backlog.md → backlog_tmp.md"
+ *       git mv backlog_tmp.md BACKLOG.md
+ *       git commit -m "Rename backlog_tmp.md → BACKLOG.md"
+ *       git push
+ *
+ *   • Stop tracking a folder that should be ignored (e.g., matrices/):
+ *       // Ensure .gitignore contains:  matrices/
+ *       git rm -r --cached matrices/
+ *       git commit -m "Stop tracking matrices directory"
+ *       git push
+ *
+ *   • “Where did my work go?” (recover via reflog):
+ *       git reflog -20
+ *       git switch -c rescue <SHA_before_problem>
+ *       // cherry-pick or squash from rescue onto a fresh branch off master
+ *
+ *   • Avoid “unrelated histories” PR errors:
+ *       // Always branch from an updated master:
+ *       git switch master && git pull && git switch -c new-feature
+ *       // Sanity-check the ancestry before PR:
+ *       git merge-base master new-feature   // prints a SHA if history is shared
+ *
+ * Quality-of-life (optional aliases):
+ *   git config --global alias.lg "log --graph --oneline --decorate --all"
+ *   git config --global alias.st "status -sb"
+ *
+ * Minimal checklist (TL;DR):
+ *   git switch master && git pull
+ *   git switch -c my-feature
+ *   # ...work...
+ *   git add -A && git commit -m "msg" && git push -u origin my-feature
+ *   # open PR; after merge:
+ *   git switch master && git pull && git branch -d my-feature && git push origin --delete my-feature
+ */
 
 /**
  * The entry point of the Matrix Algebra application.
