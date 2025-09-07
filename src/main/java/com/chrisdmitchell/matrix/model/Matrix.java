@@ -402,10 +402,22 @@ public final class Matrix {
 			throw new IllegalArgumentException("Determinant is undefined for empty matrices.");
 		}
 
-		double det = Determinants.calculateDeterminantRecursively(this.getMatrix());
-		log.debug("Determinant of {} found for matrix {}.", det, this);
+		double det;
+		if (cache.lu != null && cache.lu.determinant != null && cache.lu.version == modCount) {
+			det = cache.lu.determinant.doubleValue();
+			log.debug("Returning the cached value for the determinant, det = {}.", cache.lu.determinant.doubleValue());
+		} else {
+			if (this.getRows() >= 5) {
+				log.debug("Performing LU decomposition to get determinant.");
+				det = luDecomposition().determinant.doubleValue();
+				log.debug("Calculated and cached LU matrices and determinant, det = {}.", det);
+			} else {
+				log.debug("Calculating the determinant recursively.");
+				det = Determinants.calculateDeterminantRecursively(this.getMatrix());
+				log.debug("Calculated determinant as det = {}.", det);
+			}
+		}
 		return det;
-
 	}
 	
 	/**
