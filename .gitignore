@@ -23,4 +23,8 @@ Thumbs.db
 # Logs & caches
 *.log
 .out/
+
+# Saved matrices
+matrices/
+
 "@ | Out-File -Encoding utf8 .gitignore

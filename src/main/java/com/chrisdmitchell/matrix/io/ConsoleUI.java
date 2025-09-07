@@ -85,6 +85,36 @@ public class ConsoleUI {
 			return parseCommand(input);
 		}
 	}
+	
+	public static boolean getYorN(String message, String defaultResponse) {
+		
+		LogUtils.logMethodEntry(log);
+		
+		String defaultString = null;
+		defaultResponse = defaultResponse.toLowerCase().substring(0, 1);
+		if (defaultResponse.equals("y")) {
+			defaultString = "([y]/n)";
+		} else {
+			defaultResponse = "n";
+			defaultString = "(y/[n])";
+		}
+
+		while (true) {
+			System.out.print(message + " " + defaultString + "? ");
+			String input = readLineStrip();
+			if (input.isEmpty()) {
+				input = defaultResponse;
+			}
+			if (input.equals("y") || input.equals("n")) {
+				if (input.equals("y")) {
+					return true;
+				} else {
+					return false;
+				}
+			}
+		}
+		
+	}
 
 	/**
 	 * Creates and returns a matrix entered by the user from the keyboard.
@@ -197,6 +227,7 @@ public class ConsoleUI {
 				}
 				yield validate(Action.LOAD, newArgs, Action.LOAD.getNumberOfArguments());
 			}
+			case "lu" -> validate(Action.LU, trimmedArgs, Action.LU.getNumberOfArguments());
 			case "multiply" -> validate(Action.MULTIPLY, trimmedArgs, Action.MULTIPLY.getNumberOfArguments());
 			case "print" -> validate(Action.PRINT, trimmedArgs, Action.PRINT.getNumberOfArguments());
 			case "ref" -> validate(Action.REF, trimmedArgs, Action.REF.getNumberOfArguments());
@@ -300,4 +331,5 @@ public class ConsoleUI {
 		log.info("Printing help for action {}.", action);
 		return new Command(null, null);
 	}
+	
 }

@@ -129,9 +129,9 @@ public final class MatrixUtils {
 		
 	}
 	
-	// --------------
-	// ROW OPERATIONS
-	// --------------
+	// --------
+	// SWAPPING
+	// --------
 	
 	public static void swapRows(double[][] source, int rowFrom, int rowTo) {
 
@@ -141,6 +141,16 @@ public final class MatrixUtils {
 		source[rowTo] = source[rowFrom];
 		source[rowFrom] = temp;
 
+	}
+	
+	public static void swapEntries(int[] source, int from, int to) {
+		
+		int temp;
+		
+		temp = source[to];
+		source[to] = source[from];
+		source[from] = temp;
+		
 	}
 	
 	// -----------------
@@ -228,7 +238,7 @@ public final class MatrixUtils {
 		int rows = matrix.getRows();
 		int columns = matrix.getColumns();
 		int wholeWidth = 8;
-		int decimalWidth = 3;
+		int decimalWidth = PRECISION;
 		int paddingSpaces = ((wholeWidth + 1) * columns) + 1;
 		int centerLine = (rows % 2 == 0) ? (rows / 2) - 1 : (rows / 2);
 		String formatParameter = "%" + wholeWidth + "." + decimalWidth + "f ";
@@ -255,4 +265,41 @@ public final class MatrixUtils {
 		log.info("Successfully built a pretty string for matrix {}.", matrix.getName());
 		return outputString.toString();
 	}
+	
+	// -----------------
+	// MATRIX GENERATION
+	// -----------------
+	
+	public static Matrix generateIdentity(int rows) {
+		
+		Matrix identity = new Matrix(rows, rows, "Identity", false);
+		
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < rows; j++) {
+				if (i == j) {
+					identity.setValue(i, j, 1);
+				} else {
+					identity.setValue(i, j, 0);
+				}
+			}
+		}
+		
+		return identity;
+		
+	}
+	
+	public static Matrix generateZero(int rows, int columns) {
+		
+		Matrix zeros = new Matrix(rows, columns, "Zeros", false);
+		
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < rows; j++) {
+				zeros.setValue(i, j, 0);
+			}
+		}
+		
+		return zeros;
+		
+	}
+	
 }
