@@ -286,6 +286,10 @@ public class Main {
 					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::add);
 					ScreenIO.prettyPrintMatrix(result);
 				}
+				case BACKWARDSUB -> {
+					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::backwardSubstitution);
+					ScreenIO.printForwardBackwardResults(result, matrices.get(command.args()[1]));
+				}
 				case CLEAR -> {
 				    String matrixName = command.args().length > 0 ? command.args()[0] : null;
 				    Matrix matrix = matrices.get(matrixName);
@@ -336,6 +340,10 @@ public class Main {
 						System.out.printf("Matrix %s does not exist in memory.%n", matrixName);
 						log.warn("Tried to find the determinant of matrix {} which does not exist in memory.", matrixName);
 					}
+				}
+				case FORWARDSUB -> {
+					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::forwardSubstitution);
+					ScreenIO.printForwardBackwardResults(result, matrices.get(command.args()[1]));
 				}
 				case HADAMARD -> {
 					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::hadamard);

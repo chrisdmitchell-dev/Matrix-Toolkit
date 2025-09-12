@@ -115,4 +115,9 @@ public class ScreenIO {
 		return ConsoleUI.getYorN("Would you like to save these results to memory", "y");
 		
 	}
+	
+	public static void printForwardBackwardResults(Matrix matrix, Matrix x) {
+		
+		
+	}
 }

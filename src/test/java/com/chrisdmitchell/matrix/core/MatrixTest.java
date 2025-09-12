@@ -1181,4 +1181,87 @@ public class MatrixTest {
 			
 		}
 	}
+	
+	@Nested
+	@DisplayName("Matrix.forwardSubstitution()")
+	class ForwardSubTests {
+		
+		Matrix twoByTwoLowerTri, twoByOneBVector, twoByOneXVector;
+		Matrix threeByThreeLowerTri, threeByOneBVector, threeByOneXVector;
+		
+		@BeforeEach
+		void setUp() {
+			
+			twoByTwoLowerTri = new Matrix(new double[][] {{2, 0},{3, 1}});
+			twoByOneBVector = new Matrix(new double[][] {{4},{7}});
+			twoByOneXVector = new Matrix(new double[][] {{2},{1}});
+			threeByThreeLowerTri = new Matrix(new double[][] {{1, 0, 0},{2, 1, 0},{-1, 3, 1}});
+			threeByOneBVector = new Matrix(new double[][] {{2},{5},{-4}});
+			threeByOneXVector = new Matrix(new double[][] {{2},{1},{-5}});
+			
+		}
+		
+		@Test
+		@DisplayName("forward substitution with a 2 x 2 matrix")
+		void fs2x2() {
+			
+			Matrix x = twoByTwoLowerTri.forwardSubstitution(twoByOneBVector);
+			
+			assertMatrixEqualsApprox(twoByOneXVector, x);
+			
+		}
+		
+		@Test
+		@DisplayName("forward substitution with a 3 x 3 matrix")
+		void fs3x3() {
+			
+			Matrix x = threeByThreeLowerTri.forwardSubstitution(threeByOneBVector);
+			
+			assertMatrixEqualsApprox(threeByOneXVector, x);
+			
+		}
+		
+	}
+	
+	@Nested
+	@DisplayName("Matrix.backwardSubstitution()")
+	class BackwardSubTests {
+		
+		Matrix twoByTwoUpperTri, twoByOneYVector, twoByOneXVector;
+		Matrix threeByThreeUpperTri, threeByOneYVector, threeByOneXVector;
+		
+		@BeforeEach
+		void setUp() {
+			
+			twoByTwoUpperTri = new Matrix(new double[][] {{4, 2},{0, -3}});
+			twoByOneYVector = new Matrix(new double[][] {{10},{-6}});
+			twoByOneXVector = new Matrix(new double[][] {{1.5},{2}});
+			threeByThreeUpperTri = new Matrix(new double[][] {{3, 1, -1},{0, 2, 4},{0, 0, -2}});
+			threeByOneYVector = new Matrix(new double[][] {{2},{1},{-5}});
+			threeByOneXVector = new Matrix(new double[][] {{3},{-4.5},{2.5}});
+			
+		}
+		
+		@Test
+		@DisplayName("backward substitution with a 2 x 2 matrix")
+		void fs2x2() {
+			
+			Matrix x = twoByTwoUpperTri.backwardSubstitution(twoByOneYVector);
+			
+			assertMatrixEqualsApprox(twoByOneXVector, x);
+			
+		}
+		
+		@Test
+		@DisplayName("backward substitution with a 3 x 3 matrix")
+		void fs3x3() {
+			
+			Matrix x = threeByThreeUpperTri.backwardSubstitution(threeByOneYVector);
+			
+			assertMatrixEqualsApprox(threeByOneXVector, x);
+			
+		}
+		
+	}
+	
 }

@@ -323,14 +323,13 @@ public final class Matrix {
 	 *
 	 * @return		{@code true} if {@code rows == 0 || columns == 0}, otherwise {@code false}
 	 */
-	@JsonIgnore public boolean isEmpty() { return this.rows == 0 || this.columns == 0; }
+	public boolean isEmpty() { return this.rows == 0 || this.columns == 0; }
 
 	/**
 	 * Tests if the matrix is square (n x n).
 	 *
 	 * @return		{@code true} if the matrix is square, {@code false} otherwise
 	 */
-	@JsonIgnore
 	public boolean isSquare() { return this.rows == this.columns; }
 
 	/**
@@ -338,7 +337,6 @@ public final class Matrix {
 	 *
 	 * @return		{@code true} if the matrix is invertible, {@code false} otherwise
 	 */
-	@JsonIgnore
 	public boolean isInvertible() {
 
 		final double det = determinant();
@@ -352,6 +350,71 @@ public final class Matrix {
 
 	}
 	
+	/**
+	 * Tests to see if the matrix is lower triangular.
+	 * <p>
+	 * This tests that all entries along the diagonal not ~0 and that entries above
+	 * the diagonal are ~0.
+	 * </p>
+	 * 
+	 * @return		{@code true} if the matrix is lower triangular, {@code false} otherwise
+	 */
+	public boolean isLowerTriangular() {
+		
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+		final double[][] matrix = this.getMatrix();
+		final double scale = MatrixUtils.safeScale(matrix);
+		
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < columns; j++) {
+				if (i == j) {
+					if (MatrixUtils.nearlyZero(matrix[i][j], scale)) {
+						return false;
+					}
+				} else if (j > i) {
+					if (!MatrixUtils.nearlyZero(matrix[i][j], scale)) {
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+		
+	}	
+	
+	/**
+	 * Tests to see if the matrix is upper triangular.
+	 * <p>
+	 * This tests that all entries along the diagonal are not ~0 and that entries
+	 * below the diagonal are ~0.
+	 * 
+	 * @return		{@code true} if the matrix is upper triangular, {@code false} otherwise
+	 */
+	public boolean isUpperTriangular() {
+		
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+		final double[][] matrix = this.getMatrix();
+		final double scale = MatrixUtils.safeScale(matrix);
+		
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < columns; j++) {
+				if (i == j) {
+					if (MatrixUtils.nearlyZero(matrix[i][j], scale)) {
+						return false;
+					}
+				} else if (i > j) {
+					if (!MatrixUtils.nearlyZero(matrix[i][j], scale)) {
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+		
+	}
+		
 	/**
 	 * Returns the rank of the given matrix.
 	 * <p>
@@ -897,6 +960,120 @@ public final class Matrix {
 		log.debug("Applied pivot vector {} to matrix {} to get {}.", Arrays.toString(pivot), this, pivotedMatrixObject);
 		return pivotedMatrixObject;
 	}
+	
+	/**
+	 * Calculates a vector x satisfying {@code L*x = b}.
+	 * <p>
+	 * Both the {@code xvector} and {@code bvector} are n x 1 Matrix objects.
+	 * </p>
+	 *  
+	 * @param bvector		a column vector b (n x 1 Matrix) to satisfy {@code L*x = b}
+	 * @return				a column vector x (n x 1 Matrix) to satisfy {@code L*x = b}
+	 * @throws IllegalArgumentException		if the receiver matrix is not lower triangular
+	 * @throws ArithmeticException			if the receiver matrix contains zeros in the diagonal
+	 */
+	public Matrix forwardSubstitution(Matrix bvector) {
+		
+		LogUtils.logMethodEntry(log);
+		
+		Objects.requireNonNull(bvector, "Bvector must not be null");
+		
+		if (!isSquare()) {
+			throw new IllegalArgumentException("Receiver matrix is not square.");
+		}
+		if (!this.isLowerTriangular()) {
+			throw new IllegalArgumentException("Receiver matrix is not lower triangular.");
+		}
+
+		
+		final int rows = this.getRows(); // = this.getColumns()
+		if (bvector.getRows() != rows) {
+			throw new IllegalArgumentException("Bvector must have the same number of rows as the receiver matrix.");
+		}
+		if (bvector.getColumns() != 1) {
+			throw new IllegalArgumentException("Bvector must have a single column.");
+		}
+		
+		final double[][] lowerTriangular = this.getMatrix();
+		final double[][] bvectorMatrix = bvector.getMatrix();
+		final double scale = MatrixUtils.safeScale(lowerTriangular);
+		
+		double[][] xvector = new double[rows][1];
+		
+		for (int i = 0; i < rows; i++) {
+			double sum = 0.0;
+			for (int j = 0; j < i; j++) {
+				sum += lowerTriangular[i][j] * xvector[j][0];
+			}
+			double d = lowerTriangular[i][i];
+			if (MatrixUtils.nearlyZero(d, scale)) {
+				throw new ArithmeticException("Diagonal contains an entry " + d + " nearly equal to 0.");
+			}
+			xvector[i][0] = (bvectorMatrix[i][0] - sum) / d;
+		}
+		
+		Matrix x = new Matrix(xvector, "FS(" + this.getName() + ")");
+		log.debug("Solved L * x = b where L = {}, x = {}, and b = {}.", this, x, bvector);
+		return x;
+
+	}
+
+	/**
+	 * Calculates a vector x satisfying {@code U*x = y}.
+	 * <p>
+	 * Both the {@code xvector} and {@code yvector} are n x 1 Matrix objects.
+	 * </p>
+	 *  
+	 * @param yvector		a column vector y (n x 1 Matrix) to satisfy {@code U*x = y}
+	 * @return				a column vector x (n x 1 Matrix) to satisfy {@code U*x = y}
+	 * @throws IllegalArgumentException		if the receiver matrix is not upper triangular
+	 * @throws ArithmeticException			if the receiver matrix contains zeros in the diagonal
+	 */
+	public Matrix backwardSubstitution(Matrix yvector) {
+	
+		LogUtils.logMethodEntry(log);
+		
+		Objects.requireNonNull(yvector, "Yvector must not be null");
+		
+		if (!isSquare()) {
+			throw new IllegalArgumentException("Receiver matrix is not square.");
+		}
+		if (!this.isUpperTriangular()) {
+			throw new IllegalArgumentException("Receiver matrix is not upper triangular.");
+		}
+		
+		final int rows = this.getRows(); // = this.getColumns()
+		if (yvector.getRows() != rows) {
+			throw new IllegalArgumentException("Yvector must have the same number of rows as the receiver matrix.");
+		}
+		if (yvector.getColumns() != 1) {
+			throw new IllegalArgumentException("Yvector must have a single column.");
+		}
+		
+		final double[][] upperTriangular = this.getMatrix();
+		final double[][] yvectorMatrix = yvector.getMatrix();
+		final double scale = MatrixUtils.safeScale(upperTriangular);
+		
+		double[][] xvector = new double[rows][1];
+		
+		for (int i = rows - 1; i >= 0; i--) {
+			double sum = 0.0;
+			for (int j = i + 1; j < rows; j++) {
+				sum += upperTriangular[i][j] * xvector[j][0];
+			}
+			double d = upperTriangular[i][i];
+			if (MatrixUtils.nearlyZero(d, scale)) {
+				throw new ArithmeticException("Diagonal contains an entry " + d + " nearly equal to 0.");
+			}
+			xvector[i][0] = (yvectorMatrix[i][0] - sum) / d;
+		}
+	
+		Matrix x = new Matrix(xvector, "BS(" + this.getName() + ")");
+		log.debug("Solved U * x = y where U = {}, x = {}, and y = {}.", this, x, yvector);
+		return x;
+		
+	}
+
 	
 	// -------------------------------
 	// DECOMPOSITIONS
