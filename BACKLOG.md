@@ -40,8 +40,6 @@
 
 - [ ] Write tests to test for thrown exceptions
 
-- [ ] Make sure ADD, SUBTRACT, and MULTIPLY in Main.java are structured the same along with
-      any other matrix operations.
 
 ## To Do For Future Versions
 

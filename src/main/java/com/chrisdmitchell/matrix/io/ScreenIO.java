@@ -59,7 +59,7 @@ public class ScreenIO {
 	    				 .map(Matrix::toShortString)
 	    				 .forEach(System.out::println);
 		
-		log.info("Printed all matrices in memory.");
+		log.debug("Printed all matrices in memory.");
 	}
 	
 	/**
@@ -77,7 +77,7 @@ public class ScreenIO {
 		    System.out.printf("%s contains matrix %s.%n", entry.getKey(), entry.getValue());
 		}
 		
-		log.info("Printed all files in directory {}.", FILE_DIRECTORY);
+		log.debug("Printed all files in directory {}.", FILE_DIRECTORY);
 
 	}
 
@@ -97,10 +97,23 @@ public class ScreenIO {
 		
 		System.out.printf("%s(%s) = %s%n,", label.strip(), matrixName, SCALAR_FORMAT.format(value));
 		
-		log.info("Printed {}({}) = {}.", label, matrixName, SCALAR_FORMAT.format(value));
+		log.debug("Printed {}({}) = {}.", label, matrixName, SCALAR_FORMAT.format(value));
 		
 	}
 	
+	/**
+	 * Prints the results of LU decomposition {@code (P * A = L * U)}.
+	 * <p>
+	 * Also asks the user if they would like to save the results.
+	 * </p>
+	 * 
+	 * @param matrix				the decomposed matrix
+	 * @param l						the lower triangular matrix
+	 * @param u						the upper triangular matrix
+	 * @param permutations			the permutation matrix
+	 * @return						{@code true} if the user wishes to save the results,
+	 * 								{@code false} otherwise		
+	 */
 	public static boolean printLUandSave(Matrix matrix, Matrix l, Matrix u, Matrix permutations) {
 		
 		LogUtils.logMethodEntry(log);
@@ -112,12 +125,9 @@ public class ScreenIO {
 		System.out.println(l);
 		System.out.println(u);
 		
+		log.debug("Printed {} * {} = {} * {}.", permutations, matrix, l, u);
 		return ConsoleUI.getYorN("Would you like to save these results to memory", "y");
 		
 	}
-	
-	public static void printForwardBackwardResults(Matrix matrix, Matrix x) {
-		
-		
-	}
+
 }

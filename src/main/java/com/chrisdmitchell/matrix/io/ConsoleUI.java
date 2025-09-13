@@ -86,6 +86,13 @@ public class ConsoleUI {
 		}
 	}
 	
+	/**
+	 * Asks the user for Y or N, taking a default response.
+	 * 
+	 * @param message				the message to query the user with
+	 * @param defaultResponse		the default response ("y" or "n")
+	 * @return						{@code true} if the user inputs "y", {@code false} otherwise
+	 */
 	public static boolean getYorN(String message, String defaultResponse) {
 		
 		LogUtils.logMethodEntry(log);

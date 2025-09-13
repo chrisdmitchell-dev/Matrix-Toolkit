@@ -199,16 +199,19 @@ public class Main {
 							  "Type 'print' to obtain a list of matrices in memory.%n",
 							  matrixNameLeft, matrixNameRight);
 			log.warn("The matrices {} and {} do not exist in memory.", matrixNameLeft, matrixNameRight);
+			return null;
 		} else if (matrixLeft == null) {
 			System.out.printf("The matrix %s does not exist in memory. " +
 					  		  "Type 'print' to obtain a list of matrices in memory.%n",
 					  		  matrixNameLeft);
 			log.warn("The matrix {} does not exist in memory.", matrixNameLeft);
+			return null;
 		} else if (matrixRight == null) {
 			System.out.printf("The matrix %s does not exist in memory. " +
 			  		  		  "Type 'print' to obtain a list of matrices in memory.%n",
 			  		  		  matrixNameRight);
 			log.warn("The matrix {} does not exist in memory.", matrixNameRight);
+			return null;
 		}
 
 		return operation.apply(matrixLeft, matrixRight);
@@ -284,11 +287,17 @@ public class Main {
 			switch (command.action()) {
 				case ADD -> {
 					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::add);
+					if (result == null) {
+						break;
+					}
 					ScreenIO.prettyPrintMatrix(result);
 				}
 				case BACKWARDSUB -> {
 					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::backwardSubstitution);
-					ScreenIO.printForwardBackwardResults(result, matrices.get(command.args()[1]));
+					if (result == null) {
+						break;
+					}
+					ScreenIO.prettyPrintMatrix(result);
 				}
 				case CLEAR -> {
 				    String matrixName = command.args().length > 0 ? command.args()[0] : null;
@@ -312,6 +321,9 @@ public class Main {
 				}
 				case COFACTORS -> {
 					Matrix result = performMatrixOperation(command.args()[0], Matrix::cofactors);
+					if (result == null) {
+						break;
+					}
 					ScreenIO.prettyPrintMatrix(result);
 				}
 				case DETERMINANT -> {
@@ -343,20 +355,28 @@ public class Main {
 				}
 				case FORWARDSUB -> {
 					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::forwardSubstitution);
-					ScreenIO.printForwardBackwardResults(result, matrices.get(command.args()[1]));
+					if (result == null) {
+						break;
+					}
+					ScreenIO.prettyPrintMatrix(result);
 				}
 				case HADAMARD -> {
 					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::hadamard);
+					if (result == null) {
+						break;
+					}
 					ScreenIO.prettyPrintMatrix(result);
 				}
 				case HELP -> {
 					String textCommand = command.args().length > 0 ? command.args()[0] : null;
 					switch (textCommand) {
 						case "add" -> Action.ADD.printHelp();
+						case "backwardsub" -> Action.BACKWARDSUB.printHelp();
 						case "clear" -> Action.CLEAR.printHelp();
 						case "cofactors" -> Action.COFACTORS.printHelp();
 						case "determinant", "det" -> Action.DETERMINANT.printHelp();
 						case "exit", "quit", "q" -> Action.EXIT.printHelp();
+						case "forwardsub" -> Action.FORWARDSUB.printHelp();
 						case "frobenius" -> Action.FROBENIUS.printHelp();
 						case "infinity" -> Action.INFINITY.printHelp();
 						case "input" -> Action.INPUT.printHelp();
@@ -399,10 +419,16 @@ public class Main {
 				}
 				case INVERSE -> {
 					Matrix result = performMatrixOperation(command.args()[0], Matrix::inverse);
+					if (result == null) {
+						break;
+					}
 					ScreenIO.prettyPrintMatrix(result);
 				}
 				case KRONECKER -> {
 					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::kronecker);
+					if (result == null) {
+						break;
+					}
 					ScreenIO.prettyPrintMatrix(result);
 				}
 				case L1 -> {
@@ -475,6 +501,9 @@ public class Main {
 						}
 					} else {
 						Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::multiply);
+						if (result == null) {
+							break;
+						}
 						ScreenIO.prettyPrintMatrix(result);
 					}
 				}
@@ -499,10 +528,16 @@ public class Main {
 				}
 				case REF -> {
 					Matrix result = performMatrixOperation(command.args()[0], Matrix::rowEchelonForm);
+					if (result == null) {
+						break;
+					}
 					ScreenIO.prettyPrintMatrix(result);
 				}
 				case RREF -> {
 					Matrix result = performMatrixOperation(command.args()[0], Matrix::reducedRowEchelonForm);
+					if (result == null) {
+						break;
+					}
 					ScreenIO.prettyPrintMatrix(result);
 				}
 				case SAVE -> {
@@ -537,8 +572,14 @@ public class Main {
 							case "add" -> {
 								result = performMatrixOperation(leftMatrix, rightMatrix, Matrix::add);
 							}
+							case "backwardsub" -> {
+								result = performMatrixOperation(leftMatrix, rightMatrix, Matrix::backwardSubstitution);
+							}
 							case "cofactors" -> {
 								result = performMatrixOperation(leftMatrix, Matrix::cofactors);
+							}
+							case "forwardsub" -> {
+								result = performMatrixOperation(leftMatrix, rightMatrix, Matrix::forwardSubstitution);
 							}
 							case "hadamard" -> {
 								result = performMatrixOperation(leftMatrix, rightMatrix, Matrix::hadamard);
@@ -582,6 +623,9 @@ public class Main {
 				}
 				case SUBTRACT -> {
 					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::subtract);
+					if (result == null) {
+						break;
+					}
 					ScreenIO.prettyPrintMatrix(result);
 				}
 				case TRACE -> {
@@ -597,6 +641,9 @@ public class Main {
 				}
 				case TRANSPOSE -> {
 					Matrix result = performMatrixOperation(command.args()[0], Matrix::transpose);
+					if (result == null) {
+						break;
+					}
 					ScreenIO.prettyPrintMatrix(result);
 				}
 				default -> {

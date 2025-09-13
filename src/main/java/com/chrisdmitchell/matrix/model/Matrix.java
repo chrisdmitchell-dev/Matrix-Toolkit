@@ -962,13 +962,13 @@ public final class Matrix {
 	}
 	
 	/**
-	 * Calculates a vector x satisfying {@code L*x = b}.
+	 * Calculates a vector x satisfying {@code L * x = b}.
 	 * <p>
 	 * Both the {@code xvector} and {@code bvector} are n x 1 Matrix objects.
 	 * </p>
 	 *  
-	 * @param bvector		a column vector b (n x 1 Matrix) to satisfy {@code L*x = b}
-	 * @return				a column vector x (n x 1 Matrix) to satisfy {@code L*x = b}
+	 * @param bvector		a column vector b (n x 1 Matrix) to satisfy {@code L * x = b}
+	 * @return				a column vector x (n x 1 Matrix) to satisfy {@code L * x = b}
 	 * @throws IllegalArgumentException		if the receiver matrix is not lower triangular
 	 * @throws ArithmeticException			if the receiver matrix contains zeros in the diagonal
 	 */
@@ -1019,13 +1019,13 @@ public final class Matrix {
 	}
 
 	/**
-	 * Calculates a vector x satisfying {@code U*x = y}.
+	 * Calculates a vector x satisfying {@code U * x = y}.
 	 * <p>
 	 * Both the {@code xvector} and {@code yvector} are n x 1 Matrix objects.
 	 * </p>
 	 *  
-	 * @param yvector		a column vector y (n x 1 Matrix) to satisfy {@code U*x = y}
-	 * @return				a column vector x (n x 1 Matrix) to satisfy {@code U*x = y}
+	 * @param yvector		a column vector y (n x 1 Matrix) to satisfy {@code U * x = y}
+	 * @return				a column vector x (n x 1 Matrix) to satisfy {@code U * x = y}
 	 * @throws IllegalArgumentException		if the receiver matrix is not upper triangular
 	 * @throws ArithmeticException			if the receiver matrix contains zeros in the diagonal
 	 */
