@@ -1264,4 +1264,62 @@ public class MatrixTest {
 		
 	}
 	
+	@Nested
+	@DisplayName("Matrix.qrDecomposition()")
+	class QRTests {
+		
+		Matrix twoByTwoSequential, twoByTwoQ, twoByTwoR;
+		Matrix threeByThreeSequential, threeByThreeQ, threeByThreeR;
+		
+		@BeforeEach
+		void setUp() {
+			
+			twoByTwoSequential = new Matrix(new double[][] {{1, 2},{3, 4}});
+			twoByTwoQ = new Matrix(new double[][] {{0.3162277660, 0.9486832981},
+			    								   {0.9486832981, -0.3162277660}});
+			twoByTwoR = new Matrix(new double[][] {{3.1622776602, 4.4271887242},
+			    								   {0, 0.6324555320}});
+			threeByThreeSequential = new Matrix(new double[][] {{1, 2, 3},{4, 5, 6},{7, 8, 9}});			
+			threeByThreeQ = new Matrix(new double[][] {{0.1230914910, 0.9045340337, 0.4082482905},
+			    									   {0.4923659639, 0.3015113446, -0.8164965809},
+			    									   {0.8616404369, -0.3015113446, 0.4082482905}});
+			threeByThreeR = new Matrix(new double[][] {{8.1240384046, 9.6011362964, 11.0782341881},
+			    									   {0, 0.9045340337, 1.8090680675},
+			    									   {0, 0, 0}});
+			
+		}
+		
+		@Test
+		@DisplayName("QR decomposition for a 2 x 2 matrix")
+		void qr2x2() {
+			
+			Matrix q = twoByTwoSequential.qOrthogonal();
+			Matrix r = twoByTwoSequential.rUpper();
+			
+			assertMatrixEqualsApprox(twoByTwoQ, q);
+			assertMatrixEqualsApprox(twoByTwoR, r);
+			
+			Matrix product = q.multiply(r);
+			
+			assertMatrixEqualsApprox(twoByTwoSequential, product);
+			
+		}
+		
+		@Test
+		@DisplayName("QR decomposition for a 2 x 2 matrix")
+		void qr3x3() {
+			
+			Matrix q = threeByThreeSequential.qOrthogonal();
+			Matrix r = threeByThreeSequential.rUpper();
+			
+			assertMatrixEqualsApprox(threeByThreeQ, q);
+			assertMatrixEqualsApprox(threeByThreeR, r);
+			
+			Matrix product = q.multiply(r);
+			
+			assertMatrixEqualsApprox(threeByThreeSequential, product);
+			
+		}
+	}
+	
 }

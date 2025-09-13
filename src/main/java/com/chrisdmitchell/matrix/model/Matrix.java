@@ -1209,6 +1209,68 @@ public final class Matrix {
 	}
 	
 	/**
+	 * Decomposes the receiver matrix into Q and R matrices and caches the result.
+	 * <p>
+	 * A cached result record is then returned.
+	 * </p>
+	 * 
+	 * @return			th RQCachedResult containing the Q and R matrices
+	 */
+	public QRCachedResult qrDecomposition() {
+		
+		LogUtils.logMethodEntry(log);
+		
+		final String name = this.getName();
+
+	    if (cache.qr != null && cache.qr.version == modCount) {
+	    	log.debug("Returned cached value of Q {} and R {} matrices.", cache.qr.q(), cache.qr.r());
+	        return cache.qr;
+	    }
+	    
+	    double[][] matrixValues = this.getMatrix();
+	    QRDecompositionResults qrresults = Decompose.householderQR(matrixValues);
+	    
+	    Matrix q = new Matrix(qrresults.q(), "Q(" + name + ")");
+	    q.setReadOnly(true);
+	    Matrix r = new Matrix(qrresults.r(), "R(" + name + ")");
+	    r.setReadOnly(true);
+
+	    cache.qr = new QRCachedResult(q, r, modCount);
+	    
+	    log.debug("Calculated Q {} and R {} matrices from {}.", q, r, this);
+	    return cache.qr;
+	    
+	}
+	
+	/**
+	 * Access the Q Matrix contained within the cached QR results.
+	 * <p>
+	 * Returns an immutable, cached view; recomputed only when the source matrix mutates.
+	 * </p>
+	 * 
+	 * @return			the cached Q matrix
+	 */
+	public Matrix qOrthogonal() {
+		
+		return qrDecomposition().q();
+		
+	}
+	
+	/**
+	 * Access the R Matrix contained within the cached QR results.
+	 * <p>
+	 * Returns an immutable, cached view; recomputed only when the source matrix mutates.
+	 * </p>
+	 * 
+	 * @return			the cached R matrix
+	 */
+	public Matrix rUpper() {
+		
+		return qrDecomposition().r();
+		
+	}
+	
+	/**
 	 * Access the packed LU Matrix contained within the cached LU results.
 	 * <p>
 	 * Returns an immutable, cached view; recomputed only when the source matrix mutates.
