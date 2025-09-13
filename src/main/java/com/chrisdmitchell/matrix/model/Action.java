@@ -12,6 +12,11 @@ public enum Action {
 	ADD("add MATRIX_NAME1 MATRIX_NAME2", new String[] {
 		"Adds MATRIX_NAME1 to MATRIX_NAME2 and returns the sum."
 		}, new int[] { 2 }),
+	BACKWARDSUB("backwardsub MATRIX_NAME1 VECTOR_NAME1", new String[] {
+		"Finds an x for U * x = y, where U is MATRIX_NAME1 and y is",
+		"VECTOR_NAME1. Both x and y are vectors defined here as",
+		"n x 1 matrices."
+		}, new int[] { 2 }),
 	CLEAR("clear MATRIX_NAME", new String[] {
 		"Clears the matrix MATRIX_NAME from memory."
 		}, new int[] { 1 }),
@@ -26,6 +31,11 @@ public enum Action {
 		"Exits the program.",
 		"You can enter 'exit,' 'quit,' or just 'q.'"
 		}, new int[] { 0 }),
+	FORWARDSUB("forwardsub MATRIX_NAME1 VECTOR_NAME1", new String[] {
+		"Finds an x for L * x = b, where L is MATRIX_NAME1 and b is",
+		"VECTOR_NAME1. Both x and b are vectors defined here as",
+		"n x 1 matrices."
+		}, new int[] { 2 }),
 	FROBENIUS("frobenius MATRIX_NAME", new String[] {
 		"Finds the Frobenius norm of MATRIX_NAME.",
 		"This is the square root of the sum of the squares of all elements."

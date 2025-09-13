@@ -24,8 +24,24 @@
     - Don’t touch it until your milestone passes all tests.
 
 ---
+## To Do For This Version
 
-## To Do
+- [ ] When exiting, check whether all matrices in memory have been saved to disk.
+      Verify if you want to exit without saving everything.
+
+- [ ] Add an option to save all matrices in memory to disk. Have one file be able
+      to contain multiple matrices.
+      
+- [ ] Add throws for Objects.requireNonNull statements (NullPointerException)
+
+- [ ] Enable exception handling in anything that calls something in Matrix.java that throws an exception
+
+- [ ] Make sure all javadocs have the appropriate throws statements.
+
+- [ ] Write tests to test for thrown exceptions
+
+
+## To Do For Future Versions
 
 - [ ] Print the matrix and augmented matrix as vectors.
 
@@ -41,11 +57,6 @@ public static String subScriptString(int value) {
 }
 ```
 
-- [ ] When exiting, check whether all matrices in memory have been saved to disk.
-      Verify if you want to exit without saving everything.
-
-- [ ] Add an option to save all matrices in memory to disk. Have one file be able
-      to contain multiple matrices.
 
 /* TODO (Matrix cleanup + maintainability roadmap)
  * 

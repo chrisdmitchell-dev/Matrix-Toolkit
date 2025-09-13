@@ -86,6 +86,13 @@ public class ConsoleUI {
 		}
 	}
 	
+	/**
+	 * Asks the user for Y or N, taking a default response.
+	 * 
+	 * @param message				the message to query the user with
+	 * @param defaultResponse		the default response ("y" or "n")
+	 * @return						{@code true} if the user inputs "y", {@code false} otherwise
+	 */
 	public static boolean getYorN(String message, String defaultResponse) {
 		
 		LogUtils.logMethodEntry(log);
@@ -206,11 +213,13 @@ public class ConsoleUI {
 
 		return switch(command) {
 			case "add" -> validate(Action.ADD, trimmedArgs, Action.ADD.getNumberOfArguments());
+			case "backwardsub" -> validate(Action.BACKWARDSUB, trimmedArgs, Action.BACKWARDSUB.getNumberOfArguments());
 			case "clear" -> validate(Action.CLEAR, trimmedArgs, Action.CLEAR.getNumberOfArguments());
 			case "cofactors" -> validate(Action.COFACTORS, trimmedArgs, Action.COFACTORS.getNumberOfArguments());
 			case "determinant", "det" -> validate(Action.DETERMINANT, trimmedArgs, Action.DETERMINANT.getNumberOfArguments());
 			case "exit", "quit", "q" -> validate(Action.EXIT, trimmedArgs, Action.EXIT.getNumberOfArguments());
 			case "frobenius" -> validate(Action.FROBENIUS, trimmedArgs, Action.FROBENIUS.getNumberOfArguments());
+			case "forwardsub" -> validate(Action.FORWARDSUB, trimmedArgs, Action.FORWARDSUB.getNumberOfArguments());
 			case "hadamard" -> validate(Action.HADAMARD, trimmedArgs, Action.HADAMARD.getNumberOfArguments());
 			case "help", "h", "?" -> validate(Action.HELP, trimmedArgs, Action.HELP.getNumberOfArguments());
 			case "infinity" -> validate(Action.INFINITY, trimmedArgs, Action.INFINITY.getNumberOfArguments());
