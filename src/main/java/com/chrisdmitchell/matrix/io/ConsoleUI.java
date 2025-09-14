@@ -227,6 +227,7 @@ public class ConsoleUI {
 			case "inverse" -> validate(Action.INVERSE, trimmedArgs, Action.INVERSE.getNumberOfArguments());
 			case "kronecker" -> validate(Action.KRONECKER, trimmedArgs, Action.KRONECKER.getNumberOfArguments());
 			case "l1" -> validate(Action.L1, trimmedArgs, Action.L1.getNumberOfArguments());
+			case "least_squares" -> validate(Action.LEAST_SQUARES, trimmedArgs, Action.LEAST_SQUARES.getNumberOfArguments());
 			case "list" -> validate(Action.LIST, trimmedArgs, Action.LIST.getNumberOfArguments());
 			case "load" -> {
 				String[] newArgs = normalizeLoadAndSaveInput(trimmedArgs, "from");
@@ -239,6 +240,7 @@ public class ConsoleUI {
 			case "lu" -> validate(Action.LU, trimmedArgs, Action.LU.getNumberOfArguments());
 			case "multiply" -> validate(Action.MULTIPLY, trimmedArgs, Action.MULTIPLY.getNumberOfArguments());
 			case "print" -> validate(Action.PRINT, trimmedArgs, Action.PRINT.getNumberOfArguments());
+			case "qr" -> validate(Action.QR, trimmedArgs, Action.QR.getNumberOfArguments());
 			case "ref" -> validate(Action.REF, trimmedArgs, Action.REF.getNumberOfArguments());
 			case "rref" -> validate(Action.RREF, trimmedArgs, Action.RREF.getNumberOfArguments());
 			case "save" -> {

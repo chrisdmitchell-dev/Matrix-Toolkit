@@ -129,5 +129,31 @@ public class ScreenIO {
 		return ConsoleUI.getYorN("Would you like to save these results to memory", "y");
 		
 	}
+	
+	/**
+	 * Prints the results of QR decomposition {@code (A = Q * R)}.
+	 * <p>
+	 * Also asks the user if they would like to save the results.
+	 * 
+	 * @param matrix				the decomposed matrix
+	 * @param q						the q-orthogonal matrix
+	 * @param r						the r-upper matrix
+	 * @return						{@code true} if the user wishes to save the results,
+	 * 								{@code false} otherwise
+	 */
+	public static boolean printQRandSave(Matrix matrix, Matrix q, Matrix r) {
+	
+		LogUtils.logMethodEntry(log);
+		
+		System.out.println("A = Q(A) * R(A)");
+		System.out.println("Where:");
+		System.out.println(matrix);
+		System.out.println(q);
+		System.out.println(r);
+		
+		log.debug("Printed {} = {} * {}.", matrix, q, r);
+		return ConsoleUI.getYorN("Would you like to save these results to memory", "y");
+		
+	}
 
 }

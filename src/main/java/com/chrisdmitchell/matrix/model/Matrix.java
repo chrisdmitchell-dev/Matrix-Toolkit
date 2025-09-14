@@ -323,6 +323,7 @@ public final class Matrix {
 	 *
 	 * @return		{@code true} if {@code rows == 0 || columns == 0}, otherwise {@code false}
 	 */
+	@JsonIgnore
 	public boolean isEmpty() { return this.rows == 0 || this.columns == 0; }
 
 	/**
@@ -330,6 +331,7 @@ public final class Matrix {
 	 *
 	 * @return		{@code true} if the matrix is square, {@code false} otherwise
 	 */
+	@JsonIgnore
 	public boolean isSquare() { return this.rows == this.columns; }
 
 	/**
@@ -337,6 +339,7 @@ public final class Matrix {
 	 *
 	 * @return		{@code true} if the matrix is invertible, {@code false} otherwise
 	 */
+	@JsonIgnore
 	public boolean isInvertible() {
 
 		final double det = determinant();
@@ -359,6 +362,7 @@ public final class Matrix {
 	 * 
 	 * @return		{@code true} if the matrix is lower triangular, {@code false} otherwise
 	 */
+	@JsonIgnore
 	public boolean isLowerTriangular() {
 		
 		final int rows = this.getRows();
@@ -391,6 +395,7 @@ public final class Matrix {
 	 * 
 	 * @return		{@code true} if the matrix is upper triangular, {@code false} otherwise
 	 */
+	@JsonIgnore
 	public boolean isUpperTriangular() {
 		
 		final int rows = this.getRows();
@@ -1072,6 +1077,52 @@ public final class Matrix {
 		log.debug("Solved U * x = y where U = {}, x = {}, and y = {}.", this, x, yvector);
 		return x;
 		
+	}
+	
+	/**
+	 * Returns a submatrix from the given receiver matrix.
+	 * 
+	 * @param rowStart				the first row from which to form the submatrix
+	 * @param rowEnd				the last row from which to form the submatrix
+	 * @param colStart				the first column from which to form the submatrix
+	 * @param colEnd				the last column from which to form the submatrix
+	 * @return						the submatrix as a Matrix object
+	 */
+	public Matrix subMatrix(int rowStart, int rowEnd, int colStart, int colEnd) {
+	
+		final int rows = rowEnd - rowStart + 1;
+		final int columns = colEnd - colStart + 1;
+		double[][] source = this.getMatrix();
+		double[][] result = new double[rows][columns];
+		
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < columns; j++) {
+				result[i][j] = source[rowStart + i][colStart + j];
+			}
+		}
+		
+		return new Matrix(result, "Sub(" + this.getName() + ")");
+		
+	}
+	
+	/**
+	 * Solves R * x = QT * y finding the vector x given Q, R, and y.
+	 * 
+	 * @param y					the vector y as an n x 1 Matrix object
+	 * @return					the vector x as an n x 1 Matrix object
+	 */
+	public Matrix leastSquares(Matrix y) {
+
+		Matrix q = this.qOrthogonal();
+	    Matrix r = this.rUpper();
+
+	    Matrix qTy = q.transpose().multiply(y);
+	    Matrix top = qTy.subMatrix(0, r.getColumns() - 1, 0, 0);
+	    
+	    Matrix result = r.backwardSubstitution(top);
+	    result.setName("LS(" + this.getName() + ")");
+	    return result;
+	    
 	}
 
 	

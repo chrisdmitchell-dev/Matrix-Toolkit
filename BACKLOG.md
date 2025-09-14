@@ -45,6 +45,8 @@
 
 - [ ] Print the matrix and augmented matrix as vectors.
 
+- [ ] Pretty print all output.
+
 ```
 public static final String SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇₈₉";
 public static String subScriptString(int value) {

@@ -382,10 +382,13 @@ public class Main {
 						case "input" -> Action.INPUT.printHelp();
 						case "inverse" -> Action.INVERSE.printHelp();
 						case "l1" -> Action.L1.printHelp();
+						case "least_squares" -> Action.LEAST_SQUARES.printHelp();
 						case "list" -> Action.LIST.printHelp();
 						case "load" -> Action.LOAD.printHelp();
+						case "lu" -> Action.LU.printHelp();
 						case "multiply" -> Action.MULTIPLY.printHelp();
 						case "print" -> Action.PRINT.printHelp();
+						case "qr" -> Action.QR.printHelp();
 						case "ref" -> Action.REF.printHelp();
 						case "rref" -> Action.RREF.printHelp();
 						case "save" -> Action.SAVE.printHelp();
@@ -441,6 +444,13 @@ public class Main {
 						System.out.printf("Matrix %s does not exist in memory.%n", matrixName);
 						log.warn("Tried to find the determinant of matrix {} which does not exist in memory.", matrixName);
 					}
+				}
+				case LEAST_SQUARES -> {
+					Matrix result = performMatrixOperation(command.args()[0], command.args()[1], Matrix::leastSquares);
+					if (result == null) {
+						break;
+					}
+					ScreenIO.prettyPrintMatrix(result);
 				}
 				case LIST -> {
 					Map<String, String> directoryListingWithNames = FileIO.listDirectoryContentsWithNames();
@@ -526,6 +536,24 @@ public class Main {
 						}
 					}
 				}
+				case QR -> {
+					String matrixName = command.args().length > 0 ? command.args()[0] : null;
+					Matrix matrix = matrices.get(matrixName);
+					if (matrix != null) {
+						Matrix q = matrix.qOrthogonal();
+						Matrix r = matrix.rUpper();
+						if (ScreenIO.printQRandSave(matrix, q, r)) {
+							q.setReadOnly(true);
+							matrices.put(q.getName(), q);
+							r.setReadOnly(true);
+							matrices.put(r.getName(), r);
+							System.out.println("Saved.");
+						}
+					} else {
+						System.out.printf("Matrix %s does not exist in memory.%n", matrixName);
+						log.warn("Tried to find the determinant of matrix {} which does not exist in memory.", matrixName);
+					}
+				}
 				case REF -> {
 					Matrix result = performMatrixOperation(command.args()[0], Matrix::rowEchelonForm);
 					if (result == null) {
@@ -589,6 +617,9 @@ public class Main {
 							}
 							case "kronecker" -> {
 								result = performMatrixOperation(leftMatrix, rightMatrix, Matrix::kronecker);
+							}
+							case "least_squares" -> {
+								result = performMatrixOperation(leftMatrix, rightMatrix, Matrix::leastSquares);
 							}
 							case "multiply" -> {
 								result = performMatrixOperation(leftMatrix, rightMatrix, Matrix::multiply);

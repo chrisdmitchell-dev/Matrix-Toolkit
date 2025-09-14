@@ -1166,8 +1166,16 @@ public class MatrixTest {
 		void lu3x3() {
 			
 			Matrix luPacked = threeByThreeSequential.lu();
+			Matrix l = threeByThreeSequential.lowerTriangular();
+			Matrix u = threeByThreeSequential.upperTriangular();
+			Matrix perm = threeByThreeSequential.luPermutations();
 			
 			assertMatrixEqualsApprox(threeByThreeLUPacked, luPacked);
+			
+			Matrix resultLeft = perm.multiply(threeByThreeSequential);
+			Matrix resultRight = l.multiply(u);
+			
+			assertMatrixEqualsApprox(resultLeft, resultRight);
 			
 		}
 		
@@ -1176,9 +1184,17 @@ public class MatrixTest {
 		void lu4x4() {
 			
 			Matrix luPacked = fourByFourSequential.lu();
+			Matrix l = fourByFourSequential.lowerTriangular();
+			Matrix u = fourByFourSequential.upperTriangular();
+			Matrix perm = fourByFourSequential.luPermutations();
 			
 			assertMatrixEqualsApprox(fourByFourLUPacked, luPacked);
-			
+
+			Matrix resultLeft = perm.multiply(fourByFourSequential);
+			Matrix resultRight = l.multiply(u);
+
+			assertMatrixEqualsApprox(resultLeft, resultRight);
+
 		}
 	}
 	
