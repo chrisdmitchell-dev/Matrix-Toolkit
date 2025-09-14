@@ -45,6 +45,8 @@
 
 - [ ] Print the matrix and augmented matrix as vectors.
 
+- [ ] Pretty print all output.
+
 ```
 public static final String SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇₈₉";
 public static String subScriptString(int value) {
@@ -137,16 +139,16 @@ TODO (Matrix Project — next ML-focused operations)
     [X] map(DoubleUnaryOperator f): apply f to each entry
     [X] Tests: compare against manual loops
 
-[ ] TRIANGULAR SOLVES
-    [ ] forwardSub(L, b): L lower-triangular with nonzero diag
-    [ ] backSub(U, b): U upper-triangular with nonzero diag
-    [ ] Tests: solve small systems; check A·x ≈ b
+[X] TRIANGULAR SOLVES
+    [X] forwardSub(L, b): L lower-triangular with nonzero diag
+    [X] backSub(U, b): U upper-triangular with nonzero diag
+    [X] Tests: solve small systems; check A·x ≈ b
 
-[ ] LU DECOMPOSITION (with partial pivoting)
-    [ ] lu(): return {L, U, pivots, sign}; cache result
-    [ ] solve(b): use LU + (forwardSub/backSub)
-    [ ] det(): reuse LU (det = sign * prod(diag(U)))
-    [ ] Tests: P·A ≈ L·U; solve random systems vs inverse(b) baseline
+[X] LU DECOMPOSITION (with partial pivoting)
+    [X] lu(): return {L, U, pivots, sign}; cache result
+    [X] solve(b): use LU + (forwardSub/backSub)
+    [X] det(): reuse LU (det = sign * prod(diag(U)))
+    [X] Tests: P·A ≈ L·U; solve random systems vs inverse(b) baseline
 
 [ ] QR DECOMPOSITION (Householder)
     [ ] qr(): return {Q, R} with Q orthonormal

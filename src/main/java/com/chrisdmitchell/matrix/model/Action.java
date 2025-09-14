@@ -12,9 +12,9 @@ public enum Action {
 	ADD("add MATRIX_NAME1 MATRIX_NAME2", new String[] {
 		"Adds MATRIX_NAME1 to MATRIX_NAME2 and returns the sum."
 		}, new int[] { 2 }),
-	BACKWARDSUB("backwardsub MATRIX_NAME1 VECTOR_NAME1", new String[] {
-		"Finds an x for U * x = y, where U is MATRIX_NAME1 and y is",
-		"VECTOR_NAME1. Both x and y are vectors defined here as",
+	BACKWARDSUB("backwardsub MATRIX_NAME VECTOR_NAME", new String[] {
+		"Finds an x for U * x = y, where U is MATRIX_NAME and y is",
+		"VECTOR_NAME. Both x and y are vectors defined here as",
 		"n x 1 matrices."
 		}, new int[] { 2 }),
 	CLEAR("clear MATRIX_NAME", new String[] {
@@ -31,9 +31,9 @@ public enum Action {
 		"Exits the program.",
 		"You can enter 'exit,' 'quit,' or just 'q.'"
 		}, new int[] { 0 }),
-	FORWARDSUB("forwardsub MATRIX_NAME1 VECTOR_NAME1", new String[] {
-		"Finds an x for L * x = b, where L is MATRIX_NAME1 and b is",
-		"VECTOR_NAME1. Both x and b are vectors defined here as",
+	FORWARDSUB("forwardsub MATRIX_NAME VECTOR_NAME", new String[] {
+		"Finds an x for L * x = b, where L is MATRIX_NAME and b is",
+		"VECTOR_NAME. Both x and b are vectors defined here as",
 		"n x 1 matrices."
 		}, new int[] { 2 }),
 	FROBENIUS("frobenius MATRIX_NAME", new String[] {
@@ -66,6 +66,11 @@ public enum Action {
 		"This is the maximum column sum of the absolute values of",
 		"the elements."
 		}, new int[] { 1 }),
+	LEAST_SQUARES("least_squares MATRIX_NAME VECTOR_NAME", new String[] {
+		"Finds an x for R * x = QT * y, where Q and R are the results of",
+		"the QR decomposition of MATRIX_NAME and y is VECTOR_NAME.",
+		"The vector y is defined here as an n x 1 matrix."
+		}, new int[] { 2 }),
 	LIST("list", new String[] {
 		"Get a list of files containing matrices."
 		}, new int[] { 0 }),
@@ -88,6 +93,9 @@ public enum Action {
 		"If MATRIX_NAME is not given, the program will print a list",
 		"of all of the matrices stored in memory along with their size."
 		}, new int[] { 0, 1 }),
+	QR("qr MATRIX_NAME", new String[] {
+		"Perform QR decomposition on MATRIX_NAME."
+		}, new int[] { 1 }),
 	REF("ref MATRIX_NAME", new String[] {
 		"Creates the row echelon form of MATRIX_NAME"
 		}, new int[] { 1 }),
